@@ -10,3 +10,7 @@ export const ingestTextSchema = z.object({
 });
 
 export type IngestTextInput = z.infer<typeof ingestTextSchema>;
+
+export const batchIngestSchema = z.object({
+  folder_path: z.string().min(1),
+});

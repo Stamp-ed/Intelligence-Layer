@@ -8,76 +8,127 @@ Internal AI-powered organizational knowledge and retrieval platform for the Stam
 - **ORM:** Prisma (PostgreSQL / Supabase)
 - **Vectors:** Qdrant
 - **AI:** OpenAI embeddings + chat
-
-> **V1 note:** Memgraph (knowledge graph) is deferred to Phase 3. V1 uses Postgres + Qdrant only.
 - **Web:** Next.js 14 App Router + Tailwind
+
+> Memgraph (knowledge graph) is deferred to Phase 3. V1–V2 use **Postgres + Qdrant** only.
 
 ## Prerequisites
 
 - Node.js 20+
-- pnpm 9+
-- Docker Desktop
+- pnpm 9+ (or `npx pnpm@9.15.0` if pnpm is not on PATH)
+- Docker Desktop (for Qdrant only)
 - OpenAI API key
+- Supabase project (or local Postgres via Docker)
 
-## Quick start
+---
 
-1. Copy environment file:
+## How to run (local development)
 
-```bash
-cp .env.example .env
-# Edit .env and set OPENAI_API_KEY
+### 1. Environment
+
+Copy the example file and configure secrets in **`.env.local`** (gitignored):
+
+```powershell
+copy .env.example .env.local
 ```
 
-2. Install dependencies:
+Required in `.env.local`:
 
-```bash
-pnpm install
-pnpm db:generate
+| Variable | Purpose |
+|----------|---------|
+| `OPENAI_API_KEY` | Embeddings + chat |
+| `DATABASE_URL` | Supabase pooled URL (port 6543, `?pgbouncer=true`) |
+| `DIRECT_URL` | Supabase direct URL (port 5432) for migrations |
+| `QDRANT_HOST` | `localhost` |
+| `QDRANT_PORT` | `6333` |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` |
+
+Optional:
+
+| Variable | Purpose |
+|----------|---------|
+| `INGEST_BATCH_ROOTS` | Comma-separated folders allowed for batch ingest (e.g. `D:\Startups\Stamped\docs`) |
+
+### 2. Install dependencies
+
+```powershell
+cd D:\Startups\Stamped\Intelligence-Layer
+npx pnpm@9.15.0 install
+npx pnpm@9.15.0 db:generate
 ```
 
-3. Start Qdrant (vectors). Postgres can be Supabase or local Docker:
+### 3. Database migrations (Supabase)
 
-```bash
+```powershell
+npx pnpm@9.15.0 db:migrate:deploy
+```
+
+### 4. Start Qdrant
+
+Start **Docker Desktop**, then:
+
+```powershell
 docker compose up qdrant -d
 ```
 
-4. Run migrations:
+Verify: http://localhost:6333/dashboard
 
-```bash
-pnpm db:migrate:deploy
+### 5. Run API + web
+
+```powershell
+npx pnpm@9.15.0 dev
 ```
 
-5. Start API and web (from repo root):
+| Service | URL |
+|---------|-----|
+| Web UI | http://localhost:3000 |
+| API | http://localhost:8000 |
+| API health | http://localhost:8000/api/v1/admin/health |
 
-```bash
-pnpm dev
-```
+---
 
-- API: http://localhost:8000
-- Web: http://localhost:3000
+## Using the app
 
-## Docker (full stack)
+1. **Ingest** — http://localhost:3000/ingest  
+   - Paste text, upload `.txt` / `.md` / `.pdf`, or Discord Chat Exporter `.json`  
+   - Batch folder scan (API server path; set `INGEST_BATCH_ROOTS`)
 
-```bash
-docker compose up --build
-```
+2. **Query** — http://localhost:3000/query  
+   - Ask questions; answers include source citations
 
-## API endpoints (Phase 1)
+3. **Documents** — http://localhost:3000/documents  
+   - Browse, filter, sort, view chunks, delete documents
+
+4. **Admin** — http://localhost:3000/admin  
+   - Postgres, Qdrant, and OpenAI health + stats
+
+---
+
+## API endpoints (Phase 1–2)
 
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/api/v1/ingest/text` | Ingest raw text |
-| POST | `/api/v1/ingest/file` | Upload `.txt` or `.md` |
+| POST | `/api/v1/ingest/file` | Upload `.txt`, `.md`, `.pdf` |
+| POST | `/api/v1/ingest/discord` | Discord Chat Exporter JSON |
+| POST | `/api/v1/ingest/batch` | Scan folder `{ "folder_path": "..." }` |
+| GET | `/api/v1/ingest/jobs` | List ingestion jobs |
 | POST | `/api/v1/query` | Natural language query |
+| GET | `/api/v1/documents` | List documents (paginated, filterable) |
+| GET | `/api/v1/documents/:id` | Document detail + chunks |
+| PATCH | `/api/v1/documents/:id` | Update metadata |
+| DELETE | `/api/v1/documents/:id` | Delete document + Qdrant vectors |
 | GET | `/api/v1/admin/health` | Service health |
-| GET | `/api/v1/admin/stats` | Document/chunk counts |
+| GET | `/api/v1/admin/stats` | Counts |
+
+---
 
 ## Project structure
 
 ```
-apps/api/          Express API
-apps/web/          Next.js UI
-packages/database/ Prisma schema + client
+apps/api/              Express API
+apps/web/              Next.js UI
+packages/database/     Prisma schema + migrations
 ```
 
 ## Scripts
@@ -85,6 +136,21 @@ packages/database/ Prisma schema + client
 | Command | Description |
 |---------|-------------|
 | `pnpm dev` | Run API + web in parallel |
+| `pnpm dev:api` | API only |
+| `pnpm dev:web` | Web only |
 | `pnpm db:generate` | Generate Prisma client |
-| `pnpm db:migrate` | Create/apply dev migrations |
-| `pnpm db:migrate:deploy` | Apply migrations (production) |
+| `pnpm db:migrate:deploy` | Apply migrations to Supabase |
+
+---
+
+## Troubleshooting
+
+**`dockerDesktopLinuxEngine` not found** — Docker Desktop is not running. Start it, then `docker compose up qdrant -d`.
+
+**Qdrant unhealthy in admin** — Run `docker compose ps` and ensure port 6333 is up.
+
+**Prisma migrate fails** — Check `DIRECT_URL` in `.env.local` (port 5432, not 6543).
+
+**Ingest produces no chunks** — Content must be long enough to form chunks ≥100 tokens after chunking.
+
+**Batch ingest path rejected** — Add the folder to `INGEST_BATCH_ROOTS` in `.env.local` and restart the API.

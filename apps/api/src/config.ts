@@ -41,6 +41,11 @@ export const config = {
   minChunkSize: 100,
 
   uploadMaxBytes: 50 * 1024 * 1024,
+
+  ingestBatchRoots: (process.env.INGEST_BATCH_ROOTS ?? "")
+    .split(",")
+    .map((r) => r.trim())
+    .filter(Boolean),
 };
 
 export function getQdrantUrl(): string {

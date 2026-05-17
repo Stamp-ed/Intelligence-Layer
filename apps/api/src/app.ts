@@ -6,6 +6,7 @@ import { AppError, errorHandler } from "./middleware/errorHandler.js";
 import { ingestRouter } from "./routes/ingest.js";
 import { queryRouter } from "./routes/query.js";
 import { adminRouter } from "./routes/admin.js";
+import { documentsRouter } from "./routes/documents.js";
 
 export function createApp(): express.Application {
   const app = express();
@@ -25,6 +26,7 @@ export function createApp(): express.Application {
 
   app.use("/api/v1/ingest", ingestRouter);
   app.use("/api/v1/query", queryRouter);
+  app.use("/api/v1/documents", documentsRouter);
   app.use("/api/v1/admin", adminRouter);
 
   app.use((err: unknown, _req: express.Request, _res: express.Response, next: express.NextFunction) => {

@@ -5,6 +5,7 @@ import { sha256 } from "../../utils/hash.js";
 import { countWords } from "../../utils/text.js";
 import { chunkText } from "./chunker.js";
 import { generateEmbeddings } from "./embedder.js";
+import { deleteDocument } from "../documents/documentService.js";
 import type { ParsedDocument } from "./parsers/textParser.js";
 
 export interface IngestOptions {
@@ -15,40 +16,75 @@ export interface IngestOptions {
   metadata?: Prisma.InputJsonValue;
 }
 
+export interface IngestJobOptions {
+  jobType?: string;
+  skipJobCreation?: boolean;
+}
+
 export interface IngestResult {
   documentId: string;
   jobId: string;
   chunkCount: number;
   duplicate: boolean;
+  replaced?: boolean;
 }
 
-async function ingestParsedContent(
+async function resolveDuplicate(
+  contentHash: string,
+  sourceId?: string,
+): Promise<{ existingId: string; duplicate: true } | { replaced: true } | null> {
+  const byHash = await prisma.document.findFirst({
+    where: { contentHash },
+  });
+  if (byHash) {
+    return { existingId: byHash.id, duplicate: true };
+  }
+
+  if (!sourceId) return null;
+
+  const bySource = await prisma.document.findFirst({
+    where: { sourceId },
+  });
+
+  if (bySource && bySource.contentHash !== contentHash) {
+    await deleteDocument(bySource.id);
+    return { replaced: true };
+  }
+
+  return null;
+}
+
+export async function ingestParsedContent(
   parsed: ParsedDocument,
   options: IngestOptions = {},
+  jobOptions: IngestJobOptions = {},
 ): Promise<IngestResult> {
   const contentHash = sha256(parsed.content);
 
-  const existing = await prisma.document.findFirst({
-    where: { contentHash },
-  });
-
-  if (existing) {
+  const duplicateCheck = await resolveDuplicate(contentHash, options.sourceId);
+  if (duplicateCheck && "existingId" in duplicateCheck) {
     return {
-      documentId: existing.id,
+      documentId: duplicateCheck.existingId,
       jobId: "",
-      chunkCount: await prisma.chunk.count({ where: { documentId: existing.id } }),
+      chunkCount: await prisma.chunk.count({
+        where: { documentId: duplicateCheck.existingId },
+      }),
       duplicate: true,
     };
   }
 
-  const job = await prisma.ingestionJob.create({
-    data: {
-      jobType: "file_upload",
-      status: "running",
-      totalItems: 1,
-      startedAt: new Date(),
-    },
-  });
+  const replaced = duplicateCheck?.replaced === true;
+
+  const job = jobOptions.skipJobCreation
+    ? null
+    : await prisma.ingestionJob.create({
+        data: {
+          jobType: jobOptions.jobType ?? "file_upload",
+          status: "running",
+          totalItems: 1,
+          startedAt: new Date(),
+        },
+      });
 
   try {
     const textChunks = chunkText(parsed.content);
@@ -64,7 +100,7 @@ async function ingestParsedContent(
         sourceId: options.sourceId,
         title: parsed.title,
         author: options.author,
-        channel: options.channel,
+        channel: options.channel ?? (parsed as ParsedDocument & { channel?: string }).channel,
         url: options.url,
         contentHash,
         rawContent: parsed.content,
@@ -76,7 +112,7 @@ async function ingestParsedContent(
     });
 
     const chunkRecords = await prisma.$transaction(
-      textChunks.map((tc, i) =>
+      textChunks.map((tc) =>
         prisma.chunk.create({
           data: {
             documentId: document.id,
@@ -117,7 +153,7 @@ async function ingestParsedContent(
     }
 
     await prisma.$transaction([
-      ...chunkRecords.map((chunk, i) =>
+      ...chunkRecords.map((chunk) =>
         prisma.chunk.update({
           where: { id: chunk.id },
           data: { embeddingId: chunk.id },
@@ -127,34 +163,41 @@ async function ingestParsedContent(
         where: { id: document.id },
         data: { ingestionStatus: "processed" },
       }),
-      prisma.ingestionJob.update({
-        where: { id: job.id },
-        data: {
-          status: "completed",
-          processedItems: 1,
-          completedAt: new Date(),
-          metadata: { documentId: document.id },
-        },
-      }),
+      ...(job
+        ? [
+            prisma.ingestionJob.update({
+              where: { id: job.id },
+              data: {
+                status: "completed",
+                processedItems: 1,
+                completedAt: new Date(),
+                metadata: { documentId: document.id, replaced },
+              },
+            }),
+          ]
+        : []),
     ]);
 
     return {
       documentId: document.id,
-      jobId: job.id,
+      jobId: job?.id ?? "",
       chunkCount: chunkRecords.length,
       duplicate: false,
+      replaced,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    await prisma.ingestionJob.update({
-      where: { id: job.id },
-      data: {
-        status: "failed",
-        failedItems: 1,
-        errorLog: message,
-        completedAt: new Date(),
-      },
-    });
+    if (job) {
+      await prisma.ingestionJob.update({
+        where: { id: job.id },
+        data: {
+          status: "failed",
+          failedItems: 1,
+          errorLog: message,
+          completedAt: new Date(),
+        },
+      });
+    }
     throw err;
   }
 }
@@ -167,7 +210,6 @@ export async function ingestTextContent(
 }
 
 export async function ingestFromBuffer(
-  content: string,
   parsed: ParsedDocument,
   options: IngestOptions & { fileName?: string } = {},
 ): Promise<IngestResult> {

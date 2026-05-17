@@ -21,6 +21,9 @@ export default function HomePage() {
         <Link href="/ingest" className="btn-secondary">
           Add Knowledge
         </Link>
+        <Link href="/documents" className="btn-secondary">
+          Browse Documents
+        </Link>
       </div>
     </div>
   );
