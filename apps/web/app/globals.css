@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ground: #efeee7;
+  --content: #f7f6f0;
+  --ink: #2b2c30;
+  --stamp-orange: #f75440;
+}
+
+body {
+  @apply bg-ground text-ink font-sans antialiased;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-5 py-2.5 text-white font-semibold rounded;
+    background: linear-gradient(135deg, #f75440, #c53b26);
+    box-shadow: 0 2px 12px rgba(247, 84, 64, 0.28);
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-5 py-2.5 font-semibold rounded border bg-ground text-stamp-orange;
+    border-color: rgba(247, 84, 64, 0.45);
+  }
+
+  .input-field {
+    @apply w-full px-3 py-2 rounded border bg-raised text-ink;
+    border-color: rgba(43, 44, 48, 0.14);
+  }
+
+  .input-field:focus {
+    @apply outline-none;
+    border-color: rgba(247, 84, 64, 0.55);
+    box-shadow: 0 0 0 3px rgba(247, 84, 64, 0.1);
+  }
+
+  .card {
+    @apply bg-card rounded border shadow-card;
+    border-color: rgba(43, 44, 48, 0.1);
+  }
+
+  .section-label {
+    @apply text-[10px] font-bold uppercase tracking-[0.12em] text-stamp-orange;
+  }
+}

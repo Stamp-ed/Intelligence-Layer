@@ -1,0 +1,18 @@
+{
+  "name": "stamped-intelligence",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel -r run dev",
+    "dev:api": "pnpm --filter @stamped/api dev",
+    "dev:web": "pnpm --filter @stamped/web dev",
+    "build": "pnpm -r run build",
+    "db:generate": "pnpm --filter @stamped/database generate",
+    "db:migrate": "pnpm --filter @stamped/database migrate:dev",
+    "db:migrate:deploy": "pnpm --filter @stamped/database migrate:deploy",
+    "db:push": "pnpm --filter @stamped/database push"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

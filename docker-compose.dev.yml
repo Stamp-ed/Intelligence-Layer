@@ -1,0 +1,9 @@
+# Use: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+services:
+  api:
+    command: >
+      sh -c "pnpm db:migrate:deploy &&
+             pnpm --filter @stamped/api dev"
+
+  web:
+    command: pnpm --filter @stamped/web dev
