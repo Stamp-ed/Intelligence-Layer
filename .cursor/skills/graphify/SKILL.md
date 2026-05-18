@@ -9,7 +9,7 @@ Two separate graphs — never mix them:
 
 ## Corpus graph (uploaded knowledge)
 
-Export is produced by the API on rebuild (`corpusExportService`) or after ingest.
+Export corpus files manually to `data/corpus/` (one `.md` per document with YAML frontmatter) or use your own export script. The product API does not run Graphify.
 
 ```
 /graphify data/corpus

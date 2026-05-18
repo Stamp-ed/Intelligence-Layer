@@ -182,10 +182,6 @@ export async function ingestParsedContent(
       enrichDocument(document.id),
     );
 
-    void import("../graph/graphBuildService.js").then(({ scheduleCorpusGraphRebuild }) =>
-      scheduleCorpusGraphRebuild(),
-    );
-
     return {
       documentId: document.id,
       jobId: job?.id ?? "",

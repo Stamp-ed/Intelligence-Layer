@@ -10,7 +10,7 @@ Internal AI-powered organizational knowledge and retrieval platform for the Stam
 - **AI:** OpenAI embeddings + chat
 - **Web:** Next.js 14 App Router + Tailwind
 
-> **Knowledge graph:** [Graphify](https://pypi.org/project/graphifyy/) file artifacts (`graphify-out/`) — no graph database container. Structured entities live in Postgres.
+> **Knowledge map:** Live graph from Postgres (documents, channels, entities). Optional [Graphify](https://pypi.org/project/graphifyy/) in Cursor for local exploration only — not required to run the app.
 
 ## Prerequisites
 
@@ -102,23 +102,22 @@ npx pnpm@9.15.0 dev
 4. **Entities** — http://localhost:3000/entities  
    - Browse extracted insurers, competitors, regulations, etc.
 
-5. **Knowledge Graph** — http://localhost:3000/graph  
-   - **Project** tab — how this app is built (`graphify-out/project/`)  
-   - **Uploaded knowledge** tab — ingested documents (`graphify-out/corpus/`)  
-   - Rebuild each tab independently after changes
+5. **Knowledge map** — http://localhost:3000/graph  
+   - Documents, Discord channels, and entities from your corpus (no Python required)  
+   - Use **Enrich entities** after bulk ingest to populate entity nodes
 
 6. **Admin** — http://localhost:3000/admin  
    - Postgres, Qdrant, graph, and OpenAI health + stats
 
-### Graphify (Cursor agent)
+### Graphify (optional — Cursor / local only)
 
-For a richer semantic graph (cross-document surprises, full report):
+For deeper semantic exploration of exports under `data/corpus/`:
 
 ```text
 /graphify data/corpus
 ```
 
-Requires Python 3.10+ and `pip install graphifyy`. Optional: set `GRAPH_EXPANSION_ENABLED=true` in `.env.local` for graph-assisted query retrieval.
+Requires Python 3.10+ and `pip install graphifyy`. Outputs go to `graphify-out/` (gitignored). This is **not** used by the deployed API.
 
 ---
 
@@ -138,10 +137,9 @@ Requires Python 3.10+ and `pip install graphifyy`. Optional: set `GRAPH_EXPANSIO
 | DELETE | `/api/v1/documents/:id` | Delete document + Qdrant vectors |
 | GET | `/api/v1/entities` | List entities |
 | GET | `/api/v1/entities/:id` | Entity detail |
-| GET | `/api/v1/graph/status` | Graph build status |
-| POST | `/api/v1/graph/rebuild` | Rebuild graph (async job) |
-| GET | `/api/v1/graph/view` | Graph HTML (iframe) |
-| GET | `/api/v1/graph/insights` | Report insights JSON |
+| GET | `/api/v1/graph/status` | Knowledge map stats (live from Postgres) |
+| GET | `/api/v1/graph/data` | Sigma.js graph payload |
+| POST | `/api/v1/graph/rebuild` | Enrich entities (async job) |
 | GET | `/api/v1/admin/health` | Service health |
 | GET | `/api/v1/admin/stats` | Counts |
 

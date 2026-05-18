@@ -3,7 +3,6 @@ import { config } from "../../config.js";
 import { prisma } from "../../lib/prisma.js";
 import { channelAwareSearch } from "../retrieval/channelAwareSearch.js";
 import { assembleContext } from "../retrieval/contextAssembler.js";
-import { expandChunksViaGraph } from "../retrieval/graphExpansion.js";
 import { rerankSearchResults } from "../retrieval/reranker.js";
 import {
   formatHistoryForPrompt,
@@ -71,42 +70,7 @@ export async function retrieveAndAnswer(
     request.filters,
   );
 
-  const seedIds = searchResults.slice(0, 5).map((r) => r.chunkId);
-  const expandedIds = await expandChunksViaGraph(request.query, seedIds);
-
-  let merged = [...searchResults];
-  if (expandedIds.length > 0) {
-    const existing = new Set(merged.map((r) => r.chunkId));
-    const extraChunks = await prisma.chunk.findMany({
-      where: { id: { in: expandedIds } },
-      include: {
-        document: {
-          select: {
-            title: true,
-            sourceType: true,
-            channel: true,
-            author: true,
-          },
-        },
-      },
-    });
-    for (const chunk of extraChunks) {
-      if (existing.has(chunk.id)) continue;
-      merged.push({
-        chunkId: chunk.id,
-        documentId: chunk.documentId,
-        score: 0.35,
-        chunkText: chunk.chunkText,
-        title: chunk.document.title ?? "Untitled",
-        sourceType: chunk.document.sourceType,
-        channel: chunk.document.channel ?? "",
-        author: chunk.document.author ?? "",
-      });
-    }
-    merged.sort((a, b) => b.score - a.score);
-  }
-
-  const topChunks = rerankSearchResults(request.query, merged, {
+  const topChunks = rerankSearchResults(request.query, searchResults, {
     maxChunks: 8,
     minScore: config.retrievalMinScore,
     maxChunksPerDocument: 2,

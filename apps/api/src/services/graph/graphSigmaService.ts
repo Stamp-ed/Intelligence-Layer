@@ -1,7 +1,5 @@
-import { readFile } from "fs/promises";
 import { prisma } from "../../lib/prisma.js";
 import { corpusDocumentWhere } from "./corpusDocuments.js";
-import { getGraphJsonPath, type GraphTarget } from "./graphPaths.js";
 
 export interface SigmaGraphNode {
   id: string;
@@ -80,72 +78,69 @@ export async function buildCorpusSigmaGraph(): Promise<SigmaGraphPayload> {
   const byChannel = new Map<string, typeof documents>();
   for (const doc of documents) {
     const ch = doc.channel?.trim() || "Unassigned";
-    const list = byChannel.get(ch) ?? [];
-    list.push(doc);
-    byChannel.set(ch, list);
+    if (!byChannel.has(ch)) byChannel.set(ch, []);
+    byChannel.get(ch)!.push(doc);
   }
 
   const channels = [...byChannel.keys()].sort();
-  const channelCount = Math.max(channels.length, 1);
+  const nodePos = new Map<string, { x: number; y: number }>();
 
-  channels.forEach((ch, ci) => {
-    const angle = (2 * Math.PI * ci) / channelCount;
-    const cx = Math.cos(angle) * 420;
-    const cy = Math.sin(angle) * 320;
-    const color = colorForKey(ch);
-    const chNodeId = channelId(ch);
+  let channelRing = 0;
+  for (const ch of channels) {
+    const cid = channelId(ch);
+    const angle = (2 * Math.PI * channelRing) / Math.max(channels.length, 1);
+    const cx = Math.cos(angle) * 220;
+    const cy = Math.sin(angle) * 220;
+    channelRing++;
 
     nodes.push({
-      id: chNodeId,
+      id: cid,
       label: ch,
-      size: 6.5,
-      color,
+      size: 10,
+      color: colorForKey(ch),
       x: cx,
       y: cy,
       nodeType: "channel",
       channel: ch,
     });
+    nodePos.set(cid, { x: cx, y: cy });
 
     const docs = byChannel.get(ch) ?? [];
-    docs.forEach((doc, di) => {
+    docs.forEach((doc, i) => {
       const docNodeId = `doc_${doc.id.replace(/-/g, "")}`;
-      const a = (2 * Math.PI * di) / Math.max(docs.length, 1);
-      const radius = 62 + Math.min(docs.length, 14) * 3.5;
+      const docAngle = (2 * Math.PI * i) / Math.max(docs.length, 1);
+      const dx = cx + Math.cos(docAngle) * 90;
+      const dy = cy + Math.sin(docAngle) * 90;
+
       nodes.push({
         id: docNodeId,
         label: doc.title ?? "Untitled",
-        size: 3.2,
-        color,
-        x: cx + Math.cos(a) * radius,
-        y: cy + Math.sin(a) * radius,
+        size: 6,
+        color: colorForKey(ch),
+        x: dx,
+        y: dy,
         nodeType: "document",
         channel: ch,
         documentId: doc.id,
         sourceType: doc.sourceType,
       });
+      nodePos.set(docNodeId, { x: dx, y: dy });
+
       edges.push({
         id: `e${edgeIdx++}`,
-        source: chNodeId,
+        source: cid,
         target: docNodeId,
-        label: "in_channel",
+        label: "channel",
       });
     });
-  });
-
-  const nodePos = new Map(nodes.map((n) => [n.id, { x: n.x, y: n.y }]));
+  }
 
   for (const entity of entities) {
-    const nodeId =
-      entity.graphNodeId ?? `entity_${entity.id.replace(/-/g, "")}`;
-    const mention = entity.mentions[0];
-    const doc = mention
-      ? documents.find((d) => d.id === mention.documentId)
-      : undefined;
-    const ch = doc?.channel?.trim() || "Unassigned";
-    const docNodeId = mention
-      ? `doc_${mention.documentId.replace(/-/g, "")}`
-      : null;
-    const anchor = docNodeId ? nodePos.get(docNodeId) : undefined;
+    const nodeId = entity.graphNodeId ?? `entity_${entity.id.replace(/-/g, "")}`;
+    const mentionDocs = entity.mentions.map((m) => m.documentId);
+    const firstDoc = documents.find((d) => mentionDocs.includes(d.id));
+    const ch = firstDoc?.channel?.trim() || "Unassigned";
+    const anchor = nodePos.get(channelId(ch));
 
     nodes.push({
       id: nodeId,
@@ -197,71 +192,6 @@ export async function buildCorpusSigmaGraph(): Promise<SigmaGraphPayload> {
   return { nodes, edges, channels };
 }
 
-async function buildFromGraphJson(
-  target: GraphTarget,
-): Promise<SigmaGraphPayload | null> {
-  try {
-    const raw = JSON.parse(
-      await readFile(getGraphJsonPath(target), "utf-8"),
-    ) as {
-      nodes?: Array<{
-        id: string;
-        label?: string;
-        file_type?: string;
-        community?: number;
-        x?: number;
-        y?: number;
-      }>;
-      links?: Array<{ source: string; target: string; relation?: string }>;
-      edges?: Array<{ source: string; target: string; relation?: string }>;
-    };
-
-    const linkList = raw.links ?? raw.edges ?? [];
-    if (!raw.nodes?.length) return null;
-
-    const nodes: SigmaGraphNode[] = raw.nodes.map((n, i) => {
-      const angle = (2 * Math.PI * i) / raw.nodes!.length;
-      const community = String(n.community ?? "default");
-      return {
-        id: n.id,
-        label: n.label ?? n.id,
-        size: n.file_type === "document" ? 6 : 4,
-        color: colorForKey(community),
-        x: n.x ?? Math.cos(angle) * 300,
-        y: n.y ?? Math.sin(angle) * 300,
-        nodeType:
-          n.file_type === "document"
-            ? "document"
-            : n.file_type === "code"
-              ? "code"
-              : "entity",
-        channel: community,
-      };
-    });
-
-    const edges: SigmaGraphEdge[] = linkList.map((e, i) => ({
-      id: `e${i}`,
-      source: e.source,
-      target: e.target,
-      label: e.relation,
-    }));
-
-    return { nodes, edges, channels: [] };
-  } catch {
-    return null;
-  }
-}
-
-export async function getSigmaGraphData(
-  target: GraphTarget,
-): Promise<SigmaGraphPayload> {
-  if (target === "corpus") {
-    const corpus = await buildCorpusSigmaGraph();
-    if (corpus.nodes.length > 0) return corpus;
-    const fallback = await buildFromGraphJson("corpus");
-    return fallback ?? { nodes: [], edges: [], channels: [] };
-  }
-
-  const project = await buildFromGraphJson("project");
-  return project ?? { nodes: [], edges: [], channels: [] };
+export async function getSigmaGraphData(): Promise<SigmaGraphPayload> {
+  return buildCorpusSigmaGraph();
 }

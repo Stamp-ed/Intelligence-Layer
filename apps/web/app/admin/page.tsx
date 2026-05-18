@@ -78,14 +78,7 @@ export default function AdminPage() {
               ["Chunks", stats.chunks],
               ["Entities", stats.entities],
               ["Relationships", stats.relationships],
-              [
-                "Project graph nodes",
-                stats.graph_project_nodes ?? stats.graph_nodes ?? 0,
-              ],
-              [
-                "Corpus graph nodes",
-                stats.graph_corpus_nodes ?? 0,
-              ],
+              ["Knowledge map nodes", stats.graph_corpus_nodes ?? 0],
               ["Ingestion jobs", stats.ingestion_jobs],
               ["Queries", stats.queries],
             ].map(([label, value]) => (

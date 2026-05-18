@@ -72,9 +72,7 @@ export interface HealthResponse {
     postgres: boolean;
     qdrant: boolean;
     openai: boolean;
-    graph_project?: "ok" | "missing" | "stale";
-    graph_corpus?: "ok" | "missing" | "stale";
-    graph?: "ok" | "missing" | "stale";
+    graph_corpus?: "ok" | "missing" | "stale" | "empty";
   };
 }
 
@@ -83,12 +81,8 @@ export interface StatsResponse {
   chunks: number;
   entities: number;
   relationships: number;
-  graph_project_nodes?: number;
-  graph_project_edges?: number;
   graph_corpus_nodes?: number;
   graph_corpus_edges?: number;
-  graph_nodes?: number;
-  graph_edges?: number;
   ingestion_jobs: number;
   queries: number;
 }
@@ -116,10 +110,8 @@ export interface ConversationDetail {
   }>;
 }
 
-export type GraphTarget = "project" | "corpus";
-
 export interface GraphStatus {
-  graph_type?: GraphTarget;
+  graph_type?: "corpus";
   built_at: string | null;
   node_count: number;
   edge_count: number;
@@ -127,13 +119,6 @@ export interface GraphStatus {
   document_count?: number;
   needs_rebuild: boolean;
   source: string | null;
-}
-
-export interface GraphInsights {
-  god_nodes: string[];
-  surprising_connections: string[];
-  suggested_questions: string[];
-  report_excerpt?: string;
 }
 
 export interface SigmaGraphNode {
@@ -443,41 +428,33 @@ export async function getStats(): Promise<StatsResponse> {
   return request<StatsResponse>("/api/v1/admin/stats");
 }
 
-export async function getGraphStatus(
-  target: GraphTarget = "corpus",
-): Promise<GraphStatus> {
-  return request<GraphStatus>(`/api/v1/graph/status?target=${target}`);
+type GraphStatusResponse =
+  | GraphStatus
+  | { project?: GraphStatus; corpus: GraphStatus };
+
+function normalizeGraphStatus(raw: GraphStatusResponse): GraphStatus {
+  if ("corpus" in raw && raw.corpus) {
+    return raw.corpus;
+  }
+  return raw as GraphStatus;
 }
 
-export async function getGraphStatusAll(): Promise<{
-  project: GraphStatus;
-  corpus: GraphStatus;
+export async function getGraphStatus(): Promise<GraphStatus> {
+  const raw = await request<GraphStatusResponse>("/api/v1/graph/status");
+  return normalizeGraphStatus(raw);
+}
+
+export async function getGraphData(): Promise<SigmaGraphPayload> {
+  return request<SigmaGraphPayload>("/api/v1/graph/data");
+}
+
+export async function postGraphRebuild(): Promise<{
+  job_id: string;
+  status: string;
 }> {
-  return request("/api/v1/graph/status?all=true");
-}
-
-export async function getGraphInsights(
-  target: GraphTarget = "corpus",
-): Promise<GraphInsights> {
-  return request<GraphInsights>(`/api/v1/graph/insights?target=${target}`);
-}
-
-export async function getGraphData(
-  target: GraphTarget = "corpus",
-): Promise<SigmaGraphPayload> {
-  return request<SigmaGraphPayload>(`/api/v1/graph/data?target=${target}`);
-}
-
-export async function postGraphRebuild(
-  target: GraphTarget = "corpus",
-  enrichEntities = false,
-): Promise<{ job_id: string; status: string; target: GraphTarget }> {
   return request("/api/v1/graph/rebuild", {
     method: "POST",
-    body: JSON.stringify({
-      target,
-      enrich_entities: enrichEntities,
-    }),
+    body: JSON.stringify({ enrich_entities: true }),
   });
 }
 

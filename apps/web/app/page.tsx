@@ -25,7 +25,7 @@ const FEATURES = [
   },
   {
     href: "/graph",
-    title: "Knowledge graph",
+    title: "Knowledge map",
     description:
       "Explore corpus structure and channel clusters — simple Graph RAG with priority channels.",
     accent: "◎",

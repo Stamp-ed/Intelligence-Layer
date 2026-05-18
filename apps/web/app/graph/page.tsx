@@ -5,10 +5,9 @@ import { useCallback, useEffect, useState } from "react";
 import {
   getGraphData,
   getGraphRebuildJob,
-  getGraphStatusAll,
+  getGraphStatus,
   postGraphRebuild,
   type GraphStatus,
-  type GraphTarget,
   type SigmaGraphNode,
   type SigmaGraphPayload,
 } from "@/lib/api";
@@ -20,94 +19,67 @@ const SigmaGraphViewer = dynamic(
   { ssr: false },
 );
 
-const TABS: { id: GraphTarget; label: string; description: string }[] = [
-  {
-    id: "project",
-    label: "Project",
-    description: "Codebase architecture — apps, packages, build spec",
-  },
-  {
-    id: "corpus",
-    label: "Uploaded knowledge",
-    description: "Ingested documents — Discord, PDFs, notes",
-  },
-];
-
 export default function GraphPage() {
-  const [active, setActive] = useState<GraphTarget>("corpus");
-  const [statuses, setStatuses] = useState<{
-    project: GraphStatus;
-    corpus: GraphStatus;
-  } | null>(null);
+  const [status, setStatus] = useState<GraphStatus | null>(null);
   const [focusedNode, setFocusedNode] = useState<SigmaGraphNode | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [rebuilding, setRebuilding] = useState(false);
+  const [enriching, setEnriching] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
-  const [autoRebuildStarted, setAutoRebuildStarted] = useState(false);
   const [graphData, setGraphData] = useState<SigmaGraphPayload | null>(null);
 
-  const status = statuses?.[active] ?? null;
-  const documentCount = status?.document_count ?? status?.corpus_file_count ?? 0;
+  const documentCount =
+    status?.document_count ?? status?.corpus_file_count ?? 0;
+  const nodeCount =
+    status?.node_count ?? graphData?.nodes.length ?? 0;
+  const edgeCount =
+    status?.edge_count ?? graphData?.edges.length ?? 0;
 
   const load = useCallback(async () => {
     try {
-      const all = await getGraphStatusAll();
-      setStatuses(all);
-      const graphPayload = await getGraphData(active).catch(() => ({
-        nodes: [],
-        edges: [],
-        channels: [],
-      }));
+      const [nextStatus, graphPayload] = await Promise.all([
+        getGraphStatus(),
+        getGraphData().catch(() => ({
+          nodes: [],
+          edges: [],
+          channels: [],
+        })),
+      ]);
+      setStatus(nextStatus);
       setGraphData(graphPayload);
       setFocusedNode(null);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load graph");
     }
-  }, [active]);
+  }, []);
 
-  const handleRebuild = useCallback(
-    async (enrichEntities?: boolean) => {
-      const enrich = enrichEntities ?? active === "corpus";
-      setRebuilding(true);
-      setError(null);
-      try {
-        const { job_id } = await postGraphRebuild(active, enrich);
-        setJobId(job_id);
-      } catch (err) {
-        setRebuilding(false);
-        setError(err instanceof Error ? err.message : "Rebuild failed");
-      }
-    },
-    [active],
-  );
+  const handleEnrich = useCallback(async () => {
+    setEnriching(true);
+    setError(null);
+    try {
+      const { job_id } = await postGraphRebuild();
+      setJobId(job_id);
+    } catch (err) {
+      setEnriching(false);
+      setError(err instanceof Error ? err.message : "Enrichment failed");
+    }
+  }, []);
 
   useEffect(() => {
     void load();
   }, [load]);
 
   useEffect(() => {
-    if (active !== "corpus" || autoRebuildStarted || rebuilding) return;
-    const corpus = statuses?.corpus;
-    if (!corpus) return;
-    const docs = corpus.document_count ?? corpus.corpus_file_count ?? 0;
-    if (docs > 0 && corpus.node_count === 0) {
-      setAutoRebuildStarted(true);
-      void handleRebuild(true);
-    }
-  }, [active, statuses, autoRebuildStarted, rebuilding, handleRebuild]);
-
-  useEffect(() => {
-    if (!jobId || !rebuilding) return;
+    if (!jobId || !enriching) return;
     const interval = setInterval(async () => {
       try {
         const job = await getGraphRebuildJob(jobId);
         if (job.status === "completed" || job.status === "failed") {
-          setRebuilding(false);
+          setEnriching(false);
           setJobId(null);
           await load();
           if (job.status === "failed") {
-            setError(job.error_log ?? "Graph rebuild failed");
+            setError(job.error_log ?? "Entity enrichment failed");
           }
         }
       } catch {
@@ -115,21 +87,20 @@ export default function GraphPage() {
       }
     }, 2000);
     return () => clearInterval(interval);
-  }, [jobId, rebuilding, load]);
+  }, [jobId, enriching, load]);
 
-  const hasGraph =
-    (graphData?.nodes.length ?? 0) > 0 || (status?.node_count ?? 0) > 0;
-  const tab = TABS.find((t) => t.id === active) ?? TABS[0];
+  const hasGraph = (graphData?.nodes.length ?? 0) > 0;
 
   return (
     <div className="space-y-6">
       <div>
-        <p className="section-label">Knowledge Graph</p>
-        <h1 className="text-[1.75rem] font-medium text-ink mt-1">Two views of your knowledge</h1>
+        <p className="section-label">Knowledge map</p>
+        <h1 className="text-[1.75rem] font-medium text-ink mt-1">
+          How your ingested knowledge connects
+        </h1>
         <p className="text-sm text-ink-secondary mt-2 max-w-2xl">
-          <strong>Project</strong> maps how this app is built.{" "}
-          <strong>Uploaded knowledge</strong> maps what you have ingested, grouped by
-          Discord channel. Powered by{" "}
+          Live view of documents, Discord channels, and extracted entities from your
+          corpus. Powered by{" "}
           <a
             href="https://www.sigmajs.org/"
             className="text-stamp-orange underline"
@@ -138,42 +109,32 @@ export default function GraphPage() {
           >
             Sigma.js
           </a>
-          . Rebuild each view after changes.
+          . Run entity enrichment after bulk ingest to populate more nodes.
         </p>
       </div>
 
-      <div className="flex gap-2 border-b" style={{ borderColor: "rgba(43,44,48,0.10)" }}>
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setActive(t.id)}
-            className={`ui-tab border-b-2 -mb-px ${
-              active === t.id ? "ui-tab-active" : "ui-tab-inactive border-transparent"
-            }`}
-          >
-            {t.label}
-            {statuses && (
-              <span className="ml-2 text-xs font-normal opacity-70">
-                {statuses[t.id].node_count} nodes
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <p className="text-sm text-ink-secondary">{tab.description}</p>
-        <button
-          type="button"
-          className="btn-primary"
-          disabled={rebuilding}
-          onClick={() => void handleRebuild()}
-        >
-          {rebuilding
-            ? "Rebuilding…"
-            : `Rebuild ${tab.label.toLowerCase()} graph`}
-        </button>
+        <p className="text-sm text-ink-secondary">
+          {documentCount} document{documentCount === 1 ? "" : "s"} in corpus
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={enriching}
+            onClick={() => void load()}
+          >
+            Refresh
+          </button>
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={enriching || documentCount === 0}
+            onClick={() => void handleEnrich()}
+          >
+            {enriching ? "Enriching…" : "Enrich entities"}
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -182,74 +143,44 @@ export default function GraphPage() {
         </p>
       )}
 
-      {status && (
-        <section className="card p-4 grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm">
+      {(status || graphData) && (
+        <section className="card p-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
           <div>
             <p className="section-label">Nodes</p>
-            <p className="stat-value">{status.node_count}</p>
+            <p className="stat-value">{nodeCount}</p>
           </div>
           <div>
             <p className="section-label">Edges</p>
-            <p className="stat-value">{status.edge_count}</p>
+            <p className="stat-value">{edgeCount}</p>
           </div>
           <div>
-            <p className="section-label">Exported files</p>
-            <p className="stat-value">{status.corpus_file_count}</p>
+            <p className="section-label">Documents</p>
+            <p className="stat-value">{documentCount}</p>
           </div>
-          {active === "corpus" && (
-            <div>
-              <p className="section-label">Documents</p>
-              <p className="stat-value">{documentCount}</p>
-            </div>
-          )}
           <div>
-            <p className="section-label">Status</p>
-            <p className="stat-value">
-              {rebuilding
-                ? "Building…"
-                : status.needs_rebuild
-                  ? "Stale"
-                  : hasGraph
-                    ? "Ready"
-                    : active === "corpus" && documentCount > 0
-                      ? "Needs rebuild"
-                      : active === "corpus"
-                        ? "Ingest first"
-                        : "Not built"}
-            </p>
+            <p className="section-label">Source</p>
+            <p className="stat-value capitalize">{status?.source ?? "postgres"}</p>
           </div>
         </section>
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 card overflow-hidden min-h-[480px] p-0">
-          {hasGraph && graphData && graphData.nodes.length > 0 ? (
+          {hasGraph && graphData ? (
             <SigmaGraphViewer
               data={graphData}
               height={520}
               onNodeFocus={setFocusedNode}
             />
-          ) : hasGraph && active === "project" ? (
-            <iframe
-              title={`${tab.label} graph`}
-              src={`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/graph/view?target=project`}
-              className="w-full h-[520px] border-0"
-            />
           ) : (
             <div className="flex h-[520px] items-center justify-center p-8 text-center text-ink-secondary text-sm">
-              {active === "corpus" ? (
-                rebuilding ? (
-                  <p>Building graph from {documentCount} documents...</p>
-                ) : documentCount > 0 ? (
-                  <p>
-                    {documentCount} documents ready. Rebuild will start automatically,
-                    or use the button above.
-                  </p>
-                ) : (
-                  <p>No corpus graph yet. Ingest documents, then rebuild.</p>
-                )
+              {documentCount > 0 ? (
+                <p>
+                  {documentCount} documents ingested. Use &quot;Enrich entities&quot; to
+                  extract entities and relationships, then refresh.
+                </p>
               ) : (
-                <p>No project graph yet. Click Rebuild or run /graphify in Cursor.</p>
+                <p>No documents yet. Ingest content first, then return here.</p>
               )}
             </div>
           )}
@@ -264,4 +195,3 @@ export default function GraphPage() {
     </div>
   );
 }
-
