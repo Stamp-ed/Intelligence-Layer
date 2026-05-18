@@ -62,7 +62,7 @@ export default function DocumentDetailPage() {
     return (
       <div>
         <p className="text-stamp-orange">{error ?? "Document not found"}</p>
-        <Link href="/documents" className="text-stamp-orange text-sm mt-4 inline-block">
+        <Link href="/documents" className="cta-link mt-4 inline-block">
           ← Back to documents
         </Link>
       </div>
@@ -91,7 +91,7 @@ export default function DocumentDetailPage() {
             href={doc.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-stamp-orange font-medium mt-2 inline-block"
+            className="cta-link mt-2 inline-block"
           >
             Open source ↗
           </a>

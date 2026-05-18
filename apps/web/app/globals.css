@@ -52,15 +52,37 @@ body {
 }
 
 @layer components {
+  /* Primary / secondary actions — match home-cta typography */
   .btn-primary {
-    @apply inline-flex items-center justify-center px-5 py-2.5 text-white font-semibold rounded;
+    font-family: var(--font-futura);
+    font-weight: 550;
+    letter-spacing: -0.01em;
+    @apply inline-flex items-center justify-center px-5 py-2.5 text-[15px] text-white rounded-lg;
     background: linear-gradient(135deg, #f75440, #c53b26);
     box-shadow: 0 2px 12px rgba(247, 84, 64, 0.28);
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center px-5 py-2.5 font-semibold rounded border bg-ground text-stamp-orange;
+    font-family: var(--font-futura);
+    font-weight: 550;
+    letter-spacing: -0.01em;
+    @apply inline-flex items-center justify-center px-5 py-2.5 text-[15px] rounded-lg border bg-ground text-stamp-orange;
     border-color: rgba(247, 84, 64, 0.45);
+  }
+
+  /* Text-style CTAs (inline links that act as actions) */
+  .cta-link {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    letter-spacing: -0.01em;
+    @apply text-sm text-stamp-orange hover:underline;
+  }
+
+  .cta-link-xs {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    letter-spacing: -0.01em;
+    @apply text-xs text-stamp-orange hover:underline;
   }
 
   .input-field,
@@ -329,9 +351,9 @@ body {
   .answer-action-btn {
     font-family: var(--font-futura);
     font-weight: 550;
-    @apply text-xs px-3 py-1.5 rounded border bg-ground text-ink-secondary transition-colors;
-    border-color: rgba(43, 44, 48, 0.14);
     letter-spacing: -0.01em;
+    @apply text-xs px-3 py-1.5 rounded-lg border bg-ground text-ink-secondary transition-colors;
+    border-color: rgba(43, 44, 48, 0.14);
   }
 
   .answer-action-btn:hover {
@@ -349,20 +371,11 @@ body {
   }
 
   .home-cta-primary {
-    font-family: var(--font-futura);
-    font-weight: 550;
-    @apply inline-flex items-center justify-center min-h-[46px] px-7 py-3 text-[15px] text-white rounded-lg;
-    letter-spacing: -0.01em;
-    background: linear-gradient(135deg, #f75440, #c53b26);
-    box-shadow: 0 2px 12px rgba(247, 84, 64, 0.28);
+    @apply btn-primary min-h-[46px] px-7 py-3;
   }
 
   .home-cta-secondary {
-    font-family: var(--font-futura);
-    font-weight: 550;
-    @apply inline-flex items-center justify-center min-h-[46px] px-7 py-3 text-[15px] rounded-lg border bg-ground text-stamp-orange;
-    letter-spacing: -0.01em;
-    border-color: rgba(247, 84, 64, 0.45);
+    @apply btn-secondary min-h-[46px] px-7 py-3;
   }
 
   .home-feature-card {

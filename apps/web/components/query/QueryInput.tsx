@@ -47,7 +47,7 @@ export function QueryInput({
           </span>
           <button
             type="button"
-            className="btn-primary !px-5 !py-2 text-sm rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
+            className="btn-primary !px-5 !py-2 disabled:opacity-40 disabled:cursor-not-allowed"
             onClick={onSubmit}
             disabled={loading || !value.trim()}
             aria-label="Send question"

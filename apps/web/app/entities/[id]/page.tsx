@@ -44,8 +44,8 @@ export default function EntityDetailPage() {
           <p className="text-ink mt-4 max-w-2xl">{entity.description}</p>
         )}
         {entity.graph_node_id && (
-          <Link href="/graph" className="inline-block mt-4 text-sm font-semibold text-stamp-orange">
-            View in knowledge graph →
+          <Link href="/graph" className="btn-secondary text-sm mt-4">
+            View in knowledge map →
           </Link>
         )}
       </div>

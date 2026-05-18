@@ -52,7 +52,7 @@ export function SourceCitationCard({ source }: SourceCitationProps) {
             <span className="uppercase font-bold">{source.source_type}</span>
             <Link
               href={`/documents/${source.document_id}`}
-              className="text-stamp-orange font-semibold"
+              className="cta-link-xs"
             >
               View document →
             </Link>
@@ -61,7 +61,7 @@ export function SourceCitationCard({ source }: SourceCitationProps) {
                 href={source.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-stamp-orange font-semibold"
+                className="cta-link-xs"
               >
                 Open source ↗
               </a>

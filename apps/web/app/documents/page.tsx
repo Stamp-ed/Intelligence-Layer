@@ -247,7 +247,7 @@ export default function DocumentsPage() {
                       <td className="px-4 py-3 text-right">
                         <button
                           type="button"
-                          className="text-xs text-stamp-orange font-semibold hover:underline"
+                          className="cta-link-xs"
                           onClick={() => handleDelete(doc.id, doc.title)}
                         >
                           Delete
