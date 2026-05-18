@@ -13,6 +13,7 @@ export interface SigmaGraphNode {
   nodeType: "channel" | "document" | "entity" | "code";
   channel: string | null;
   documentId?: string;
+  sourceType?: string;
 }
 
 export interface SigmaGraphEdge {
@@ -89,15 +90,15 @@ export async function buildCorpusSigmaGraph(): Promise<SigmaGraphPayload> {
 
   channels.forEach((ch, ci) => {
     const angle = (2 * Math.PI * ci) / channelCount;
-    const cx = Math.cos(angle) * 520;
-    const cy = Math.sin(angle) * 420;
+    const cx = Math.cos(angle) * 420;
+    const cy = Math.sin(angle) * 320;
     const color = colorForKey(ch);
     const chNodeId = channelId(ch);
 
     nodes.push({
       id: chNodeId,
       label: ch,
-      size: 14,
+      size: 6.5,
       color,
       x: cx,
       y: cy,
@@ -109,17 +110,18 @@ export async function buildCorpusSigmaGraph(): Promise<SigmaGraphPayload> {
     docs.forEach((doc, di) => {
       const docNodeId = `doc_${doc.id.replace(/-/g, "")}`;
       const a = (2 * Math.PI * di) / Math.max(docs.length, 1);
-      const radius = 90 + Math.min(docs.length, 12) * 6;
+      const radius = 62 + Math.min(docs.length, 14) * 3.5;
       nodes.push({
         id: docNodeId,
         label: doc.title ?? "Untitled",
-        size: 6,
+        size: 3.2,
         color,
         x: cx + Math.cos(a) * radius,
         y: cy + Math.sin(a) * radius,
         nodeType: "document",
         channel: ch,
         documentId: doc.id,
+        sourceType: doc.sourceType,
       });
       edges.push({
         id: `e${edgeIdx++}`,
@@ -148,10 +150,10 @@ export async function buildCorpusSigmaGraph(): Promise<SigmaGraphPayload> {
     nodes.push({
       id: nodeId,
       label: entity.name,
-      size: 4,
-      color: "#2B2C30",
-      x: (anchor?.x ?? 0) + (Math.random() - 0.5) * 28,
-      y: (anchor?.y ?? 0) + (Math.random() - 0.5) * 28,
+      size: 2.2,
+      color: "#78859B",
+      x: (anchor?.x ?? 0) + (Math.random() - 0.5) * 14,
+      y: (anchor?.y ?? 0) + (Math.random() - 0.5) * 14,
       nodeType: "entity",
       channel: ch,
     });

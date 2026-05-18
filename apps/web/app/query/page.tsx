@@ -160,69 +160,76 @@ export default function QueryPage() {
     }
   };
 
+  const hasThread = thread.length > 0;
+
   return (
-    <div className="flex flex-col lg:flex-row gap-8">
-      <aside className="hidden lg:block w-56 shrink-0 space-y-3">
-        <p className="section-label">Recent</p>
-        <ul className="space-y-1 max-h-[50vh] overflow-y-auto">
+    <div className="flex min-h-[calc(100vh-10rem)] -my-8">
+      {/* Recent sidebar */}
+      <aside
+        className="hidden lg:flex w-60 shrink-0 flex-col py-8 pr-5 mr-6 border-r"
+        style={{ borderColor: "rgba(43, 44, 48, 0.1)" }}
+      >
+        <p className="section-label mb-3">Recent</p>
+        <ul className="space-y-0.5 flex-1 overflow-y-auto min-h-0">
           {conversations.map((c) => (
             <li key={c.id}>
               <button
                 type="button"
                 onClick={() => void loadConversation(c.id)}
-                className={`w-full text-left text-sm px-2 py-2 rounded-md hover:bg-raised ${
-                  conversationId === c.id ? "bg-raised font-semibold" : ""
+                className={`w-full text-left text-sm px-3 py-2.5 rounded-lg transition-colors ${
+                  conversationId === c.id
+                    ? "bg-raised font-semibold text-ink"
+                    : "text-ink-secondary hover:bg-raised/80 hover:text-ink"
                 }`}
               >
-                {c.preview || "Untitled"}
+                <span className="line-clamp-2">{c.preview || "Untitled"}</span>
               </button>
             </li>
           ))}
+          {conversations.length === 0 && (
+            <li className="text-xs text-ink-dim px-3 py-2">No conversations yet</li>
+          )}
         </ul>
       </aside>
 
-      <div className="flex-1 space-y-8 min-w-0">
-        <header className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="section-label">Query</p>
-            <h1 className="text-2xl font-bold text-ink mt-1">
-              Ask the knowledge base
-            </h1>
-          </div>
-          <div className="flex flex-wrap gap-2 items-center">
-            <button
-              type="button"
-              className="btn-secondary text-sm"
-              onClick={startNewConversation}
-            >
-              New conversation
-            </button>
-            <label className="flex items-center gap-2 text-sm text-ink-secondary cursor-pointer">
-              <input
-                type="checkbox"
-                checked={strategic}
-                onChange={(e) => setStrategic(e.target.checked)}
-                className="accent-stamp-orange"
-              />
-              Strategic synthesis
-            </label>
-          </div>
-        </header>
+      {/* Center — chat-style */}
+      <section className="flex-1 flex flex-col min-w-0 relative">
+        <div className="absolute top-6 right-0 z-10 flex flex-wrap items-center justify-end gap-3">
+          <button
+            type="button"
+            className="btn-secondary text-sm"
+            onClick={startNewConversation}
+          >
+            New conversation
+          </button>
+          <label className="flex items-center gap-2 text-sm text-ink-secondary cursor-pointer bg-card/80 px-3 py-1.5 rounded-lg border"
+            style={{ borderColor: "rgba(43, 44, 48, 0.1)" }}
+          >
+            <input
+              type="checkbox"
+              checked={strategic}
+              onChange={(e) => setStrategic(e.target.checked)}
+              className="accent-stamp-orange"
+            />
+            Strategic synthesis
+          </label>
+        </div>
 
-        {thread.length > 0 && (
-          <div className="space-y-6">
+        {hasThread && (
+          <div className="flex-1 overflow-y-auto w-full max-w-3xl mx-auto pt-16 pb-6 px-2 space-y-6">
             {thread.map((msg, i) =>
               msg.role === "user" ? (
                 <div
                   key={i}
-                  className="card p-4 mr-0 lg:mr-12"
+                  className="rounded-2xl px-5 py-4 ml-auto max-w-[85%]"
                   style={{ background: "#EEEDE7" }}
                 >
-                  <p className="section-label mb-1">You</p>
-                  <p className="text-ink whitespace-pre-wrap">{msg.content}</p>
+                  <p className="text-ink whitespace-pre-wrap text-[15px] leading-relaxed">
+                    {msg.content}
+                  </p>
                 </div>
               ) : (
-                <div key={i} className="ml-0 lg:ml-4">
+                <div key={i} className="w-full">
                   <QueryResponseView
                     response={{
                       answer: msg.content,
@@ -241,19 +248,38 @@ export default function QueryPage() {
           </div>
         )}
 
-        <QueryInput
-          value={query}
-          onChange={setQuery}
-          onSubmit={handleSubmit}
-          loading={loading}
-        />
+        <div className={`flex flex-col items-center w-full px-4 ${
+          hasThread ? "pb-8 pt-2" : "flex-1 justify-center py-8"
+        }`}
+        >
+          {!hasThread && (
+            <div className="text-center mb-8 max-w-lg">
+              <p className="text-stamp-orange text-2xl mb-3" aria-hidden>
+                ✦
+              </p>
+              <h1 className="font-display text-3xl md:text-[2.35rem] font-semibold text-ink tracking-tight">
+                Ask Stamped
+              </h1>
+              <p className="text-ink-secondary text-sm mt-2">
+                Search your organizational knowledge base
+              </p>
+            </div>
+          )}
 
-        {error && (
-          <p className="text-stamp-orange text-sm" role="alert">
-            {error}
-          </p>
-        )}
-      </div>
+          <QueryInput
+            value={query}
+            onChange={setQuery}
+            onSubmit={handleSubmit}
+            loading={loading}
+          />
+
+          {error && (
+            <p className="text-stamp-orange text-sm mt-4 text-center" role="alert">
+              {error}
+            </p>
+          )}
+        </div>
+      </section>
 
       <QueryFilters
         filters={filters}

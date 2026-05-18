@@ -27,7 +27,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ['"Helvetica Neue"', "Helvetica", "Arial", "sans-serif"],
-        display: ['"Playfair Display"', "Georgia", "serif"],
+        display: ["var(--font-playfair)", "Georgia", "serif"],
         mono: ['"SF Mono"', '"Fira Code"', "monospace"],
       },
       maxWidth: {

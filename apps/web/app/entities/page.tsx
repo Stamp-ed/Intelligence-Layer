@@ -48,12 +48,12 @@ export default function EntitiesPage() {
         <input
           type="search"
           placeholder="Search entities…"
-          className="input flex-1 min-w-[200px]"
+          className="input flex-1 min-w-[240px] max-w-xl"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
         <select
-          className="input w-auto"
+          className="input w-auto min-w-[160px]"
           value={entityType}
           onChange={(e) => setEntityType(e.target.value)}
         >

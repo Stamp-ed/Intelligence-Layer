@@ -4,15 +4,15 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 import {
   getGraphData,
-  getGraphInsights,
   getGraphRebuildJob,
   getGraphStatusAll,
   postGraphRebuild,
-  type GraphInsights,
   type GraphStatus,
   type GraphTarget,
+  type SigmaGraphNode,
   type SigmaGraphPayload,
 } from "@/lib/api";
+import { GraphNodePanel } from "@/components/graph/GraphNodePanel";
 
 const SigmaGraphViewer = dynamic(
   () =>
@@ -39,7 +39,7 @@ export default function GraphPage() {
     project: GraphStatus;
     corpus: GraphStatus;
   } | null>(null);
-  const [insights, setInsights] = useState<GraphInsights | null>(null);
+  const [focusedNode, setFocusedNode] = useState<SigmaGraphNode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [rebuilding, setRebuilding] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
@@ -53,16 +53,13 @@ export default function GraphPage() {
     try {
       const all = await getGraphStatusAll();
       setStatuses(all);
-      const [i, data] = await Promise.all([
-        getGraphInsights(active),
-        getGraphData(active).catch(() => ({
-          nodes: [],
-          edges: [],
-          channels: [],
-        })),
-      ]);
-      setInsights(i);
-      setGraphData(data);
+      const graphPayload = await getGraphData(active).catch(() => ({
+        nodes: [],
+        edges: [],
+        channels: [],
+      }));
+      setGraphData(graphPayload);
+      setFocusedNode(null);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load graph");
@@ -227,9 +224,13 @@ export default function GraphPage() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 card overflow-hidden min-h-[480px]">
+        <div className="lg:col-span-2 card overflow-hidden min-h-[480px] p-0">
           {hasGraph && graphData && graphData.nodes.length > 0 ? (
-            <SigmaGraphViewer data={graphData} height={520} />
+            <SigmaGraphViewer
+              data={graphData}
+              height={520}
+              onNodeFocus={setFocusedNode}
+            />
           ) : hasGraph && active === "project" ? (
             <iframe
               title={`${tab.label} graph`}
@@ -256,16 +257,9 @@ export default function GraphPage() {
           )}
         </div>
 
-        <aside className="space-y-4">
-          {insights && (
-            <>
-              <InsightBlock title="Suggested questions" items={insights.suggested_questions} />
-              <InsightBlock title="God nodes" items={insights.god_nodes} />
-              <InsightBlock
-                title="Surprising connections"
-                items={insights.surprising_connections}
-              />
-            </>
+        <aside className="lg:sticky lg:top-4 self-start">
+          {graphData && (
+            <GraphNodePanel node={focusedNode} data={graphData} />
           )}
         </aside>
       </div>
@@ -273,22 +267,3 @@ export default function GraphPage() {
   );
 }
 
-function InsightBlock({
-  title,
-  items,
-}: {
-  title: string;
-  items: string[];
-}) {
-  if (items.length === 0) return null;
-  return (
-    <section className="card p-4">
-      <h2 className="font-semibold text-ink text-sm mb-2">{title}</h2>
-      <ul className="space-y-2 text-sm text-ink-secondary list-disc pl-4">
-        {items.slice(0, 6).map((item) => (
-          <li key={item}>{item}</li>
-        ))}
-      </ul>
-    </section>
-  );
-}

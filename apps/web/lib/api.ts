@@ -146,6 +146,7 @@ export interface SigmaGraphNode {
   nodeType: "channel" | "document" | "entity" | "code";
   channel: string | null;
   documentId?: string;
+  sourceType?: string;
 }
 
 export interface SigmaGraphEdge {
