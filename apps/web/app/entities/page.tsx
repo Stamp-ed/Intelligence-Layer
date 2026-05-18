@@ -12,6 +12,16 @@ const TYPE_COLORS: Record<string, string> = {
   fraud_type: "text-stamp-orange",
 };
 
+const ENTITY_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "All types" },
+  { value: "insurer", label: "Insurer" },
+  { value: "competitor", label: "Competitor" },
+  { value: "product_module", label: "Product module" },
+  { value: "fraud_type", label: "Fraud type" },
+  { value: "regulation", label: "Regulation" },
+  { value: "market_concept", label: "Market concept" },
+];
+
 export default function EntitiesPage() {
   const [entities, setEntities] = useState<EntitySummary[]>([]);
   const [total, setTotal] = useState(0);
@@ -38,33 +48,37 @@ export default function EntitiesPage() {
     <div className="space-y-6">
       <div>
         <p className="section-label">Entities</p>
-        <h1 className="text-2xl font-bold text-ink mt-1">Knowledge entities</h1>
+        <h1 className="text-[1.75rem] font-medium text-ink mt-1">Knowledge entities</h1>
         <p className="text-sm text-ink-secondary mt-2">
           {total} entities extracted from your corpus
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-4">
-        <input
-          type="search"
-          placeholder="Search entities…"
-          className="input flex-1 min-w-[240px] max-w-xl"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <select
-          className="input w-auto min-w-[160px]"
-          value={entityType}
-          onChange={(e) => setEntityType(e.target.value)}
-        >
-          <option value="">All types</option>
-          <option value="insurer">Insurer</option>
-          <option value="competitor">Competitor</option>
-          <option value="product_module">Product module</option>
-          <option value="fraud_type">Fraud type</option>
-          <option value="regulation">Regulation</option>
-          <option value="market_concept">Market concept</option>
-        </select>
+      <div className="filter-sidebar max-w-2xl flex-row flex-wrap items-end gap-4">
+        <div className="flex-1 min-w-[240px]">
+          <label className="field-label">Search entities</label>
+          <input
+            type="search"
+            placeholder="Search entities…"
+            className="input w-full"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="min-w-[160px]">
+          <label className="field-label">Type</label>
+          <select
+            className="form-select"
+            value={entityType}
+            onChange={(e) => setEntityType(e.target.value)}
+          >
+            {ENTITY_TYPE_OPTIONS.map((opt) => (
+              <option key={opt.value || "all"} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {error && (
@@ -78,9 +92,9 @@ export default function EntitiesPage() {
           <li key={entity.id}>
             <Link href={`/entities/${entity.id}`} className="card block p-4 hover:border-stamp-orange/30">
               <div className="flex justify-between items-start gap-2">
-                <span className="font-semibold text-ink">{entity.name}</span>
+                <span className="table-link">{entity.name}</span>
                 <span
-                  className={`text-xs font-semibold uppercase ${TYPE_COLORS[entity.entity_type] ?? "text-ink-secondary"}`}
+                  className={`type-badge ${TYPE_COLORS[entity.entity_type] ?? "text-ink-secondary"}`}
                 >
                   {entity.entity_type.replace(/_/g, " ")}
                 </span>

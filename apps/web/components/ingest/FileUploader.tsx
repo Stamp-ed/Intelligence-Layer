@@ -29,7 +29,7 @@ export function FileUploader({
       className="border-2 border-dashed rounded p-8 text-center bg-raised transition-colors hover:border-stamp-orange/40"
       style={{ borderColor: "rgba(43,44,48,0.14)" }}
     >
-      <p className="font-semibold text-ink text-sm">{label}</p>
+      <p className="field-label text-ink-dim mb-0">{label}</p>
       <p className="text-xs text-ink-secondary mt-1 mb-4">{hint}</p>
       <label className="btn-secondary cursor-pointer inline-block">
         Choose file

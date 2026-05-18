@@ -43,7 +43,7 @@ export default function AdminPage() {
     <div className="space-y-8">
       <div>
         <p className="section-label">Admin</p>
-        <h1 className="text-2xl font-bold text-ink mt-1">System status</h1>
+        <h1 className="text-[1.75rem] font-medium text-ink mt-1">System status</h1>
       </div>
 
       {error && (
@@ -54,7 +54,7 @@ export default function AdminPage() {
 
       {health && (
         <section className="card p-6">
-          <h2 className="font-semibold mb-4">Health</h2>
+          <h2 className="mb-4">Health</h2>
           <p className="text-sm text-ink-secondary mb-4">
             Overall: <strong>{health.status}</strong>
           </p>
@@ -71,7 +71,7 @@ export default function AdminPage() {
 
       {stats && (
         <section className="card p-6">
-          <h2 className="font-semibold mb-4">Statistics</h2>
+          <h2 className="mb-4">Statistics</h2>
           <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {[
               ["Documents", stats.documents],
@@ -91,7 +91,7 @@ export default function AdminPage() {
             ].map(([label, value]) => (
               <div key={String(label)}>
                 <dt className="section-label">{label}</dt>
-                <dd className="text-2xl font-bold text-ink mt-1">
+                <dd className="stat-value text-2xl mt-1">
                   <span>{value}</span>
                 </dd>
               </div>

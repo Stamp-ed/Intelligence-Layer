@@ -55,7 +55,7 @@ export function GraphNodePanel({ node, data }: GraphNodePanelProps) {
         </div>
         {data.channels.length > 0 && (
           <div className="pt-4 border-t border-black/5">
-            <p className="text-xs font-semibold text-ink-secondary mb-2">
+            <p className="field-label mb-2">
               {data.channels.length} channels
             </p>
             <p className="text-[11px] text-ink-dim">
@@ -84,11 +84,11 @@ export function GraphNodePanel({ node, data }: GraphNodePanelProps) {
             className="h-3 w-3 shrink-0 rounded-full ring-2 ring-white shadow-sm"
             style={{ background: node.color }}
           />
-          <span className="text-[10px] font-bold uppercase tracking-wide text-ink-dim">
+          <span className="type-badge text-ink-dim">
             {TYPE_LABELS[node.nodeType]}
           </span>
         </div>
-        <h2 className="text-lg font-bold text-ink leading-snug break-words">
+        <h2 className="text-lg text-ink leading-snug break-words">
           {node.label}
         </h2>
       </div>
@@ -131,7 +131,7 @@ export function GraphNodePanel({ node, data }: GraphNodePanelProps) {
 
       {neighbors.length > 0 && (
         <div className="flex-1 min-h-0">
-          <p className="text-xs font-semibold text-ink-secondary mb-2">
+          <p className="field-label mb-2">
             Connected to
           </p>
           <ul className="space-y-1.5 max-h-48 overflow-y-auto text-sm">

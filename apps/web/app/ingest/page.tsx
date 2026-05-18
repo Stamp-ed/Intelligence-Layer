@@ -122,7 +122,7 @@ export default function IngestPage() {
     <div className="space-y-8">
       <div>
         <p className="section-label">Ingest</p>
-        <h1 className="text-2xl font-bold text-ink mt-1">Add knowledge</h1>
+        <h1 className="text-[1.75rem] font-medium text-ink mt-1">Add knowledge</h1>
       </div>
 
       <div className="flex flex-wrap gap-2 border-b pb-2" style={{ borderColor: "rgba(43,44,48,0.10)" }}>
@@ -131,10 +131,8 @@ export default function IngestPage() {
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className={`px-3 py-1.5 text-sm font-semibold rounded ${
-              tab === t.id
-                ? "text-stamp-orange border-b-2 border-stamp-orange"
-                : "text-ink-secondary hover:text-stamp-orange"
+            className={`ui-tab ${
+              tab === t.id ? "ui-tab-active" : "ui-tab-inactive"
             }`}
           >
             {t.label}
@@ -221,7 +219,7 @@ export default function IngestPage() {
       )}
 
       <section className="card p-6 space-y-4">
-        <h2 className="font-semibold text-ink">Ingestion jobs</h2>
+        <h2 className="panel-heading">Ingestion jobs</h2>
         <JobTracker activeJobId={activeJobId} />
       </section>
     </div>

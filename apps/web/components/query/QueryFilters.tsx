@@ -42,105 +42,127 @@ export function QueryFilters({
   }
 
   return (
-    <aside className="card p-4 space-y-5 w-full lg:w-64 shrink-0">
-      <p className="section-label">Filters</p>
+    <aside className="filter-panel" aria-label="Query filters">
+      <div className="filter-panel-inner">
+        <header
+          className="pb-4 mb-2 border-b"
+          style={{ borderColor: "rgba(43, 44, 48, 0.1)" }}
+        >
+          <p className="filter-panel-title mb-0">Filters</p>
+        </header>
 
-      {availableChannels.length > 0 && (
-        <div>
-          <p className="text-xs font-semibold text-ink-secondary mb-2">
-            Priority channel (Graph RAG)
-          </p>
-          <p className="text-[11px] text-ink-dim mb-2 leading-snug">
-            Search this channel first, then the rest of your knowledge base.
-          </p>
-          <select
-            className="input-field text-sm w-full"
-            value={filters.primaryChannel}
-            onChange={(e) =>
-              onChange({ ...filters, primaryChannel: e.target.value })
+        <div
+          className="flex flex-col divide-y"
+          style={{ borderColor: "rgba(43, 44, 48, 0.08)" }}
+        >
+          {availableChannels.length > 0 && (
+            <section className="py-4 first:pt-0">
+              <p className="filter-group-label mb-1.5">Priority channel</p>
+              <p className="text-[11px] text-ink-dim mb-2.5 leading-snug font-sans">
+                Search this channel first, then the rest of your knowledge base.
+              </p>
+              <select
+                className="filter-control filter-control-channel"
+                value={filters.primaryChannel}
+                onChange={(e) =>
+                  onChange({ ...filters, primaryChannel: e.target.value })
+                }
+              >
+                <option value="">All channels (no priority)</option>
+                {availableChannels.map((ch) => (
+                  <option key={ch} value={ch}>
+                    {ch}
+                  </option>
+                ))}
+              </select>
+            </section>
+          )}
+
+          {availableChannels.length > 0 && (
+            <section className="py-4">
+              <p className="filter-group-label mb-2.5">Limit to channels</p>
+              <div className="flex flex-col gap-0.5 max-h-32 overflow-y-auto pr-1">
+                {availableChannels.map((ch) => (
+                  <label key={ch} className="filter-option items-start">
+                    <input
+                      type="checkbox"
+                      checked={filters.channels.includes(ch)}
+                      onChange={() => toggleChannel(ch)}
+                      className="mt-0.5"
+                    />
+                    <span className="filter-channel-name truncate">{ch}</span>
+                  </label>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <section className="py-4">
+            <p className="filter-group-label mb-2.5">Source type</p>
+            <div className="flex flex-col gap-0.5">
+              {sourceTypes.map((type) => (
+                <label key={type} className="filter-option">
+                  <input
+                    type="checkbox"
+                    checked={filters.sourceTypes.includes(type)}
+                    onChange={() => toggleSource(type)}
+                  />
+                  <span className="filter-option-value">{type}</span>
+                </label>
+              ))}
+            </div>
+          </section>
+
+          <section className="py-4">
+            <p className="filter-group-label mb-2.5">Date range</p>
+            <div className="space-y-2">
+              <label className="block">
+                <span className="sr-only">From date</span>
+                <input
+                  type="date"
+                  className="filter-control"
+                  value={filters.dateFrom}
+                  onChange={(e) =>
+                    onChange({ ...filters, dateFrom: e.target.value })
+                  }
+                />
+              </label>
+              <label className="block">
+                <span className="sr-only">To date</span>
+                <input
+                  type="date"
+                  className="filter-control"
+                  value={filters.dateTo}
+                  onChange={(e) =>
+                    onChange({ ...filters, dateTo: e.target.value })
+                  }
+                />
+              </label>
+            </div>
+          </section>
+        </div>
+
+        <footer
+          className="pt-4 mt-1 border-t"
+          style={{ borderColor: "rgba(43, 44, 48, 0.1)" }}
+        >
+          <button
+            type="button"
+            className="ui-chrome text-sm text-stamp-orange hover:underline"
+            onClick={() =>
+              onChange({
+                primaryChannel: "",
+                sourceTypes: [],
+                channels: [],
+                dateFrom: "",
+                dateTo: "",
+              })
             }
           >
-            <option value="">All channels (no priority)</option>
-            {availableChannels.map((ch) => (
-              <option key={ch} value={ch}>
-                {ch}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {availableChannels.length > 0 && (
-        <div>
-          <p className="text-xs font-semibold text-ink-secondary mb-2">
-            Limit to channels (optional)
-          </p>
-          <div className="flex flex-col gap-1.5 max-h-36 overflow-y-auto">
-            {availableChannels.map((ch) => (
-              <label key={ch} className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={filters.channels.includes(ch)}
-                  onChange={() => toggleChannel(ch)}
-                  className="accent-stamp-orange"
-                />
-                <span className="truncate">{ch}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div>
-        <p className="text-xs font-semibold text-ink-secondary mb-2">Source type</p>
-        <div className="flex flex-col gap-1.5">
-          {sourceTypes.map((type) => (
-            <label key={type} className="flex items-center gap-2 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.sourceTypes.includes(type)}
-                onChange={() => toggleSource(type)}
-                className="accent-stamp-orange"
-              />
-              {type}
-            </label>
-          ))}
-        </div>
+            Clear filters
+          </button>
+        </footer>
       </div>
-
-      <div>
-        <p className="text-xs font-semibold text-ink-secondary mb-2">Date range</p>
-        <div className="space-y-2">
-          <input
-            type="date"
-            className="input-field text-sm"
-            value={filters.dateFrom}
-            onChange={(e) => onChange({ ...filters, dateFrom: e.target.value })}
-          />
-          <input
-            type="date"
-            className="input-field text-sm"
-            value={filters.dateTo}
-            onChange={(e) => onChange({ ...filters, dateTo: e.target.value })}
-          />
-        </div>
-      </div>
-
-      <button
-        type="button"
-        className="text-xs text-stamp-orange font-semibold"
-        onClick={() =>
-          onChange({
-            primaryChannel: "",
-            sourceTypes: [],
-            channels: [],
-            dateFrom: "",
-            dateTo: "",
-          })
-        }
-      >
-        Clear filters
-      </button>
     </aside>
   );
 }

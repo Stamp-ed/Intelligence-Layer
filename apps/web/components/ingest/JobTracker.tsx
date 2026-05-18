@@ -71,16 +71,16 @@ export function JobTracker({ activeJobId }: { activeJobId?: string | null }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-high-raised text-left">
-            <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-ink-secondary">
+            <th className="table-header-label px-3 py-2 text-left">
               Type
             </th>
-            <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-ink-secondary">
+            <th className="table-header-label px-3 py-2 text-left">
               Status
             </th>
-            <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-ink-secondary">
+            <th className="table-header-label px-3 py-2 text-left">
               Progress
             </th>
-            <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-ink-secondary">
+            <th className="table-header-label px-3 py-2 text-left">
               Created
             </th>
           </tr>
@@ -98,7 +98,7 @@ export function JobTracker({ activeJobId }: { activeJobId?: string | null }) {
                 style={{ borderColor: "rgba(43,44,48,0.08)" }}
               >
                 <td className="px-3 py-2 font-mono text-xs">{job.jobType}</td>
-                <td className={`px-3 py-2 font-semibold uppercase text-xs ${statusClass(job.status)}`}>
+                <td className={`px-3 py-2 type-badge ${statusClass(job.status)}`}>
                   {job.status}
                 </td>
                 <td className="px-3 py-2">

@@ -74,11 +74,13 @@ export default function DocumentDetailPage() {
   return (
     <div className="space-y-8 max-w-4xl">
       <div>
-        <Link href="/documents" className="text-sm text-stamp-orange font-semibold">
+        <Link href="/documents" className="ui-chrome text-sm text-stamp-orange">
           ← Documents
         </Link>
-        <p className="section-label mt-4">{doc.source_type}</p>
-        <h1 className="text-2xl font-bold text-ink mt-1">{doc.title ?? "Untitled"}</h1>
+        <p className="mt-4">
+          <span className="filter-option-value">{doc.source_type}</span>
+        </p>
+        <h1 className="text-[1.75rem] font-medium text-ink mt-1">{doc.title ?? "Untitled"}</h1>
         <p className="text-sm text-ink-secondary mt-2">
           {doc.channel && <span>{doc.channel} · </span>}
           {doc.author && <span>{doc.author} · </span>}
@@ -116,7 +118,7 @@ export default function DocumentDetailPage() {
           {doc.tags.map((tag) => (
             <span
               key={tag}
-              className="text-xs font-bold uppercase px-2 py-1 rounded bg-orange-mid text-ink"
+              className="type-badge px-2 py-1 rounded bg-orange-mid text-ink"
             >
               {tag}
             </span>
@@ -133,10 +135,10 @@ export default function DocumentDetailPage() {
             <button
               type="button"
               onClick={() => setTab("rendered")}
-              className={`px-4 py-2 text-sm font-semibold rounded-md ${
+              className={`ui-tab rounded-md ${
                 tab === "rendered"
                   ? "bg-stamp-orange text-white"
-                  : "text-ink-secondary hover:bg-raised"
+                  : "ui-tab-inactive hover:bg-raised"
               }`}
             >
               Rendered
@@ -145,10 +147,10 @@ export default function DocumentDetailPage() {
           <button
             type="button"
             onClick={() => setTab("raw")}
-            className={`px-4 py-2 text-sm font-semibold rounded-md ${
+            className={`ui-tab rounded-md ${
               tab === "raw"
                 ? "bg-stamp-orange text-white"
-                : "text-ink-secondary hover:bg-raised"
+                : "ui-tab-inactive hover:bg-raised"
             }`}
           >
             Raw text
@@ -156,10 +158,10 @@ export default function DocumentDetailPage() {
           <button
             type="button"
             onClick={() => setTab("chunks")}
-            className={`px-4 py-2 text-sm font-semibold rounded-md ${
+            className={`ui-tab rounded-md ${
               tab === "chunks"
                 ? "bg-stamp-orange text-white"
-                : "text-ink-secondary hover:bg-raised"
+                : "ui-tab-inactive hover:bg-raised"
             }`}
           >
             Chunks ({doc.chunks.length})
@@ -183,7 +185,7 @@ export default function DocumentDetailPage() {
                   className="p-4 rounded border bg-content"
                   style={{ borderColor: "rgba(43,44,48,0.08)" }}
                 >
-                  <p className="text-[10px] font-bold uppercase text-ink-dim mb-2">
+                  <p className="field-label mb-2">
                     Chunk {chunk.chunk_index + 1}
                     {chunk.token_count != null && ` · ${chunk.token_count} tokens`}
                   </p>

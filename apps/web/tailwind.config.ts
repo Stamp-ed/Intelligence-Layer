@@ -28,6 +28,8 @@ const config: Config = {
       fontFamily: {
         sans: ['"Helvetica Neue"', "Helvetica", "Arial", "sans-serif"],
         display: ["var(--font-playfair)", "Georgia", "serif"],
+        heading: ['"Futura PT"', "Futura", "Century Gothic", "sans-serif"],
+        body: ['"Helvetica Neue"', "Helvetica", "Arial", "sans-serif"],
         mono: ['"SF Mono"', '"Fira Code"', "monospace"],
       },
       maxWidth: {

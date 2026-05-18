@@ -33,9 +33,12 @@ export default function EntityDetailPage() {
         <Link href="/entities" className="text-sm text-ink-secondary hover:text-stamp-orange">
           ← Entities
         </Link>
-        <h1 className="text-2xl font-bold text-ink mt-2">{entity.name}</h1>
-        <p className="text-sm text-ink-secondary mt-1 capitalize">
-          {entity.entity_type.replace(/_/g, " ")} · {entity.mention_count} mentions
+        <h1 className="text-[1.75rem] font-medium text-ink mt-2">{entity.name}</h1>
+        <p className="text-sm text-ink-secondary mt-1 flex flex-wrap items-center gap-2">
+          <span className="type-badge text-ink-secondary">
+            {entity.entity_type.replace(/_/g, " ")}
+          </span>
+          <span>{entity.mention_count} mentions</span>
         </p>
         {entity.description && (
           <p className="text-ink mt-4 max-w-2xl">{entity.description}</p>
@@ -48,14 +51,14 @@ export default function EntityDetailPage() {
       </div>
 
       <section className="card p-6">
-        <h2 className="font-semibold mb-4">Related entities</h2>
+        <h2 className="mb-4">Related entities</h2>
         {entity.related_entities.length === 0 ? (
           <p className="text-sm text-ink-secondary">No relationships recorded yet.</p>
         ) : (
           <ul className="space-y-2 text-sm">
             {entity.related_entities.map((r) => (
               <li key={`${r.id}-${r.direction}`}>
-                <Link href={`/entities/${r.id}`} className="font-semibold text-ink hover:text-stamp-orange">
+                <Link href={`/entities/${r.id}`} className="table-link">
                   {r.name}
                 </Link>
                 <span className="text-ink-secondary">
@@ -69,13 +72,13 @@ export default function EntityDetailPage() {
       </section>
 
       <section className="card p-6">
-        <h2 className="font-semibold mb-4">Mentions</h2>
+        <h2 className="mb-4">Mentions</h2>
         <ul className="space-y-4">
           {entity.mentions.map((m) => (
             <li key={m.chunk_id} className="border-b pb-4 last:border-0" style={{ borderColor: "rgba(43,44,48,0.08)" }}>
               <Link
                 href={`/documents/${m.document_id}`}
-                className="font-semibold text-ink hover:text-stamp-orange"
+                className="table-link"
               >
                 {m.title}
               </Link>

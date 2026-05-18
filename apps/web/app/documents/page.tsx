@@ -81,86 +81,86 @@ export default function DocumentsPage() {
       <aside className="lg:w-64 shrink-0 space-y-4">
         <div>
           <p className="section-label">Documents</p>
-          <h1 className="text-2xl font-bold text-ink mt-1">Knowledge base</h1>
+          <h1 className="text-[1.75rem] font-medium text-ink mt-1">Knowledge base</h1>
         </div>
 
-        <div className="card p-4 space-y-3">
-          <label className="block text-xs font-semibold text-ink-secondary uppercase">
-            Search
-          </label>
-          <input
-            className="input-field text-sm"
-            placeholder="Title or content…"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-          />
+        <div className="filter-sidebar">
+          <div>
+            <label className="field-label">Search</label>
+            <input
+              className="input-field w-full"
+              placeholder="Title or content…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
 
-          <label className="block text-xs font-semibold text-ink-secondary uppercase pt-2">
-            Source type
-          </label>
-          <select
-            className="input-field text-sm"
-            value={sourceType}
-            onChange={(e) => {
-              setSourceType(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">All</option>
-            {sourceTypes.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
+          <div>
+            <label className="field-label">Source type</label>
+            <select
+              className="input-field w-full filter-control-channel"
+              value={sourceType}
+              onChange={(e) => {
+                setSourceType(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">All</option>
+              {sourceTypes.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <label className="block text-xs font-semibold text-ink-secondary uppercase pt-2">
-            Channel
-          </label>
-          <select
-            className="input-field text-sm"
-            value={channel}
-            onChange={(e) => {
-              setChannel(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="">All</option>
-            {channels.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+          <div>
+            <label className="field-label">Channel</label>
+            <select
+              className="input-field w-full filter-control-channel"
+              value={channel}
+              onChange={(e) => {
+                setChannel(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">All</option>
+              {channels.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          <label className="block text-xs font-semibold text-ink-secondary uppercase pt-2">
-            From
-          </label>
-          <input
-            type="date"
-            className="input-field text-sm"
-            value={dateFrom}
-            onChange={(e) => {
-              setDateFrom(e.target.value);
-              setPage(1);
-            }}
-          />
+          <div>
+            <label className="field-label">From</label>
+            <input
+              type="date"
+              className="input-field w-full"
+              value={dateFrom}
+              onChange={(e) => {
+                setDateFrom(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
 
-          <label className="block text-xs font-semibold text-ink-secondary uppercase pt-2">
-            To
-          </label>
-          <input
-            type="date"
-            className="input-field text-sm"
-            value={dateTo}
-            onChange={(e) => {
-              setDateTo(e.target.value);
-              setPage(1);
-            }}
-          />
+          <div>
+            <label className="field-label">To</label>
+            <input
+              type="date"
+              className="input-field w-full"
+              value={dateTo}
+              onChange={(e) => {
+                setDateTo(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
         </div>
       </aside>
 
@@ -187,7 +187,7 @@ export default function DocumentsPage() {
                   ).map(([key, label]) => (
                     <th
                       key={key}
-                      className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-wide text-ink-secondary cursor-pointer hover:text-stamp-orange"
+                      className="table-header-label px-4 py-2 text-left cursor-pointer hover:text-stamp-orange"
                       onClick={() => {
                         if (sortBy === key) {
                           setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -227,13 +227,19 @@ export default function DocumentsPage() {
                       <td className="px-4 py-3">
                         <Link
                           href={`/documents/${doc.id}`}
-                          className="font-semibold text-ink hover:text-stamp-orange"
+                          className="table-link"
                         >
                           {doc.title}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-ink-secondary">{doc.source_type}</td>
-                      <td className="px-4 py-3 text-ink-secondary">{doc.channel ?? "—"}</td>
+                      <td className="px-4 py-3">
+                        <span className="filter-option-value">{doc.source_type}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="filter-channel-name">
+                          {doc.channel ?? "—"}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-ink-secondary">{doc.word_count}</td>
                       <td className="px-4 py-3 text-ink-secondary text-xs">
                         {new Date(doc.ingested_at).toLocaleDateString()}

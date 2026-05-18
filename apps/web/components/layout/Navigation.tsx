@@ -19,10 +19,7 @@ export function Navigation() {
   return (
     <header className="border-b bg-ground" style={{ borderColor: "rgba(43,44,48,0.10)" }}>
       <div className="flex w-full items-center justify-between px-5 py-4 sm:px-8 lg:px-10 xl:px-12">
-        <Link
-          href="/"
-          className="flex items-center gap-2.5 text-lg font-bold text-ink shrink-0"
-        >
+        <Link href="/" className="brand-title flex items-center gap-2.5 shrink-0">
           <Image
             src="/stamped-logo.png"
             alt="Stamped"
@@ -42,7 +39,7 @@ export function Navigation() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm font-semibold pb-1 border-b-2 transition-colors ${
+                className={`nav-link pb-1 border-b-2 transition-colors ${
                   active
                     ? "text-stamp-orange border-stamp-orange"
                     : "text-ink-secondary border-transparent hover:text-stamp-orange"

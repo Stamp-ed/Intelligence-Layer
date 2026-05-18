@@ -5,9 +5,17 @@ interface QueryInputProps {
   onChange: (value: string) => void;
   onSubmit: () => void;
   loading: boolean;
+  /** Shorter input after the first message in a thread */
+  compact?: boolean;
 }
 
-export function QueryInput({ value, onChange, onSubmit, loading }: QueryInputProps) {
+export function QueryInput({
+  value,
+  onChange,
+  onSubmit,
+  loading,
+  compact = false,
+}: QueryInputProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -17,17 +25,21 @@ export function QueryInput({ value, onChange, onSubmit, loading }: QueryInputPro
 
   return (
     <div className="w-full max-w-2xl">
-      <div className="relative rounded-2xl border bg-card shadow-card overflow-hidden transition-shadow focus-within:shadow-card-hover"
-        style={{ borderColor: "rgba(43, 44, 48, 0.12)" }}
-      >
+      <div className="query-input-shell">
         <textarea
-          className="w-full min-h-[132px] max-h-[280px] resize-none bg-transparent px-5 pt-4 pb-14 text-ink placeholder:text-ink-dim focus:outline-none text-[15px] leading-relaxed"
-          placeholder="How can I help you today?"
+          className={
+            compact
+              ? "w-full min-h-[52px] max-h-[140px] resize-none bg-transparent px-4 pt-3 pb-11 text-ink placeholder:text-ink-dim focus:outline-none text-[15px] leading-relaxed"
+              : "w-full min-h-[132px] max-h-[280px] resize-none bg-transparent px-5 pt-4 pb-14 text-ink placeholder:text-ink-dim focus:outline-none text-[15px] leading-relaxed"
+          }
+          placeholder={
+            compact ? "Ask a follow-up…" : "How can I help you today?"
+          }
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={loading}
-          rows={4}
+          rows={compact ? 1 : 4}
         />
         <div className="absolute bottom-3 right-3 flex items-center gap-2">
           <span className="hidden sm:inline text-[10px] text-ink-dim">

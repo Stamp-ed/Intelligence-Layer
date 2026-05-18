@@ -125,7 +125,7 @@ export default function GraphPage() {
     <div className="space-y-6">
       <div>
         <p className="section-label">Knowledge Graph</p>
-        <h1 className="text-2xl font-bold text-ink mt-1">Two views of your knowledge</h1>
+        <h1 className="text-[1.75rem] font-medium text-ink mt-1">Two views of your knowledge</h1>
         <p className="text-sm text-ink-secondary mt-2 max-w-2xl">
           <strong>Project</strong> maps how this app is built.{" "}
           <strong>Uploaded knowledge</strong> maps what you have ingested, grouped by
@@ -148,10 +148,8 @@ export default function GraphPage() {
             key={t.id}
             type="button"
             onClick={() => setActive(t.id)}
-            className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors ${
-              active === t.id
-                ? "text-stamp-orange border-stamp-orange"
-                : "text-ink-secondary border-transparent hover:text-ink"
+            className={`ui-tab border-b-2 -mb-px ${
+              active === t.id ? "ui-tab-active" : "ui-tab-inactive border-transparent"
             }`}
           >
             {t.label}
@@ -188,25 +186,25 @@ export default function GraphPage() {
         <section className="card p-4 grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm">
           <div>
             <p className="section-label">Nodes</p>
-            <p className="font-bold text-ink">{status.node_count}</p>
+            <p className="stat-value">{status.node_count}</p>
           </div>
           <div>
             <p className="section-label">Edges</p>
-            <p className="font-bold text-ink">{status.edge_count}</p>
+            <p className="stat-value">{status.edge_count}</p>
           </div>
           <div>
             <p className="section-label">Exported files</p>
-            <p className="font-bold text-ink">{status.corpus_file_count}</p>
+            <p className="stat-value">{status.corpus_file_count}</p>
           </div>
           {active === "corpus" && (
             <div>
               <p className="section-label">Documents</p>
-              <p className="font-bold text-ink">{documentCount}</p>
+              <p className="stat-value">{documentCount}</p>
             </div>
           )}
           <div>
             <p className="section-label">Status</p>
-            <p className="font-bold text-ink">
+            <p className="stat-value">
               {rebuilding
                 ? "Building…"
                 : status.needs_rebuild

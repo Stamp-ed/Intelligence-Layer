@@ -1,5 +1,6 @@
 import type { QueryResponse as QueryResponseType } from "@/lib/api";
 import { MarkdownContent } from "@/components/MarkdownContent";
+import { AnswerActions } from "./AnswerActions";
 import { SourceCitationCard } from "./SourceCitation";
 
 interface QueryResponseProps {
@@ -25,12 +26,13 @@ export function QueryResponse({ response }: QueryResponseProps) {
         >
           <header className="flex items-center justify-between gap-2 mb-3">
             <p className="section-label mb-0">Answer</p>
-            <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded bg-orange-mid text-ink">
+            <span className="type-badge px-2 py-1 rounded bg-orange-mid text-ink">
               {badge}
             </span>
           </header>
           <MarkdownContent content={response.answer} />
-          <p className="text-xs text-ink-dim mt-4 font-mono">{response.model_used}</p>
+          <AnswerActions answer={response.answer} modelUsed={response.model_used} />
+          <p className="text-xs text-ink-dim mt-3 font-mono">{response.model_used}</p>
         </div>
 
         {response.sources.length > 0 && (

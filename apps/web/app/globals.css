@@ -2,17 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Book (400). Add Medium (500) / Demi (600) woff2 here when available for true weights. */
+@font-face {
+  font-family: "Futura PT";
+  src:
+    local("Futura PT W02 Book"),
+    local("Futura PT Book"),
+    url("/fonts/FuturaPTW02-Book.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --ground: #efeee7;
   --content: #f7f6f0;
   --ink: #2b2c30;
   --stamp-orange: #f75440;
+  --font-futura: "Futura PT", Futura, "Century Gothic", sans-serif;
+  /* Body copy only — headings use --font-futura */
+  --font-body: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 body {
   @apply bg-ground text-ink font-sans antialiased;
   font-size: 16px;
   line-height: 1.7;
+}
+
+@layer base {
+  /* Page titles — Futura PT Book */
+  h1:not(.font-display):not(.query-hero-title) {
+    font-family: var(--font-futura);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    letter-spacing: -0.015em;
+  }
+
+  h3 {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    letter-spacing: -0.01em;
+  }
 }
 
 @layer components {
@@ -27,14 +63,18 @@ body {
     border-color: rgba(247, 84, 64, 0.45);
   }
 
+  .input-field,
+  .input {
+    font-family: var(--font-body);
+    border-color: rgba(43, 44, 48, 0.12);
+  }
+
   .input-field {
-    @apply w-full px-3 py-2 rounded border bg-raised text-ink;
-    border-color: rgba(43, 44, 48, 0.14);
+    @apply w-full px-2.5 py-1.5 text-xs rounded border bg-ground text-ink;
   }
 
   .input {
-    @apply w-full pl-4 pr-3 py-2.5 rounded-lg border bg-raised text-ink;
-    border-color: rgba(43, 44, 48, 0.12);
+    @apply w-full pl-4 pr-3 py-2.5 text-sm rounded-lg border bg-raised text-ink;
   }
 
   .input:focus {
@@ -53,8 +93,304 @@ body {
     border-color: rgba(43, 44, 48, 0.1);
   }
 
+  /* Eyebrow labels: Ingest, Documents, Recent, Filters, etc. */
   .section-label {
-    @apply text-[10px] font-bold uppercase tracking-[0.12em] text-stamp-orange;
+    font-family: var(--font-futura);
+    font-weight: 550;
+    @apply text-[13px] uppercase text-stamp-orange;
+    letter-spacing: 0.11em;
+  }
+
+  /* Product wordmark — strongest Futura weight in UI */
+  .brand-title {
+    font-family: var(--font-futura);
+    font-weight: 600;
+    @apply text-xl tracking-tight text-ink;
+    letter-spacing: -0.02em;
+  }
+
+  /* Top nav: Query, Ingest, Documents, etc. */
+  .nav-link {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    @apply text-[15px];
+    letter-spacing: -0.01em;
+  }
+
+  /* Toolbar: New conversation, Strategic synthesis, etc. */
+  .ui-chrome {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    @apply text-[15px];
+    letter-spacing: -0.01em;
+  }
+
+  /* Form / filter field labels (Search, Source type, table sections, etc.) */
+  .field-label,
+  .filter-group-label {
+    font-family: var(--font-futura);
+    font-weight: 500;
+    @apply block text-[11px] uppercase tracking-[0.08em] text-ink-dim mb-1.5;
+  }
+
+  .table-header-label {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    @apply text-[11px] uppercase tracking-[0.08em] text-ink-secondary;
+  }
+
+  .ui-tab {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    @apply text-sm px-3 py-1.5 rounded transition-colors;
+    letter-spacing: -0.01em;
+  }
+
+  .ui-tab-active {
+    @apply text-stamp-orange border-b-2 border-stamp-orange;
+  }
+
+  .ui-tab-inactive {
+    @apply text-ink-secondary hover:text-stamp-orange;
+  }
+
+  .table-link {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    @apply text-ink hover:text-stamp-orange;
+  }
+
+  .stat-value {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    @apply text-ink;
+  }
+
+  .panel-heading {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    @apply text-base text-ink;
+  }
+
+  .type-badge {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    @apply text-[11px] uppercase tracking-[0.06em];
+  }
+
+  .filter-sidebar {
+    @apply card p-4 flex flex-col gap-3;
+  }
+
+  .table-cell-mono {
+    font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+    @apply text-[11px] text-ink-secondary;
+  }
+
+  .filter-panel {
+    @apply hidden lg:flex flex-col shrink-0 self-start w-72 py-8 pl-6;
+  }
+
+  .filter-panel-inner {
+    @apply card flex flex-col p-5 gap-0;
+  }
+
+  /* "Filters" panel title only — larger than section-label */
+  .filter-panel-title {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    @apply text-[15px] uppercase text-stamp-orange;
+    letter-spacing: 0.11em;
+  }
+
+  /* Channel paths + source type values in filter lists */
+  .filter-channel-name,
+  .filter-option-value {
+    font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+    @apply text-[11px] leading-snug text-ink-secondary;
+    letter-spacing: 0.02em;
+  }
+
+  .filter-control-channel {
+    font-family: "SF Mono", "Fira Code", ui-monospace, monospace;
+    @apply text-[11px];
+    letter-spacing: 0.02em;
+  }
+
+  .filter-control {
+    font-family: var(--font-body);
+    @apply w-full px-2.5 py-1.5 text-xs rounded border bg-ground text-ink;
+    border-color: rgba(43, 44, 48, 0.12);
+  }
+
+  .filter-control:focus {
+    @apply outline-none border-stamp-orange/40;
+    box-shadow: 0 0 0 2px rgba(247, 84, 64, 0.08);
+  }
+
+  /* Entity type and similar enum dropdowns — Futura, matches type-badge */
+  .form-select {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    @apply w-full px-2.5 py-1.5 text-xs rounded border bg-ground text-ink;
+    letter-spacing: -0.01em;
+    border-color: rgba(43, 44, 48, 0.12);
+  }
+
+  .form-select:focus {
+    @apply outline-none border-stamp-orange/40;
+    box-shadow: 0 0 0 2px rgba(247, 84, 64, 0.08);
+  }
+
+  .form-select option {
+    font-family: var(--font-futura);
+    font-weight: 500;
+    @apply text-xs text-ink;
+  }
+
+  .filter-option {
+    font-family: var(--font-body);
+    @apply flex items-center gap-2.5 text-sm text-ink cursor-pointer py-1;
+  }
+
+  .filter-option input[type="checkbox"] {
+    @apply h-3.5 w-3.5 shrink-0 rounded accent-stamp-orange;
+  }
+
+  .toolbar-chip {
+    @apply inline-flex items-center gap-3 min-h-[42px] px-4 py-2 rounded-lg border bg-card cursor-pointer;
+    border-color: rgba(43, 44, 48, 0.1);
+  }
+
+  .toolbar-chip input[type="checkbox"] {
+    @apply h-4 w-4 shrink-0 rounded accent-stamp-orange;
+  }
+
+  .toolbar-btn {
+    @apply btn-secondary ui-chrome min-h-[42px] px-4;
+  }
+
+  /* Recent sidebar: label + rows share one left edge; highlight does not extend past it */
+  .recent-sidebar {
+    @apply flex flex-col min-h-0;
+  }
+
+  .recent-sidebar-label {
+    @apply pl-3 pr-3;
+  }
+
+  .recent-sidebar-item {
+    font-family: var(--font-body);
+    font-weight: 400;
+    @apply w-full text-left text-sm py-2 px-3 rounded-md transition-colors;
+  }
+
+  .recent-sidebar-item-preview {
+    @apply block line-clamp-2 leading-[1.35] max-h-[2.7em] overflow-hidden;
+  }
+
+  .recent-sidebar-item.is-active {
+    font-weight: 500;
+    @apply bg-raised text-ink;
+  }
+
+  .recent-sidebar-item:not(.is-active) {
+    @apply text-ink-secondary;
+  }
+
+  .recent-sidebar-item:not(.is-active):hover {
+    @apply bg-raised/70 text-ink;
+  }
+
+  /* User-sent messages in query thread */
+  .query-user-message {
+    @apply ml-auto max-w-[85%] rounded-2xl border bg-card px-5 py-4 shadow-card;
+    border-color: rgba(247, 84, 64, 0.22);
+  }
+
+  .query-user-message-text {
+    @apply text-ink whitespace-pre-wrap text-[15px] leading-relaxed;
+  }
+
+  .query-input-shell {
+    @apply relative w-full rounded-2xl border bg-card shadow-card overflow-hidden transition-shadow;
+    border-color: rgba(43, 44, 48, 0.14);
+  }
+
+  .query-input-shell:focus-within {
+    border-color: rgba(247, 84, 64, 0.35);
+    box-shadow: 0 2px 16px rgba(247, 84, 64, 0.1);
+  }
+
+  .answer-actions {
+    @apply flex flex-wrap items-center gap-2 pt-4 mt-4 border-t;
+  }
+
+  .answer-action-btn {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    @apply text-xs px-3 py-1.5 rounded border bg-ground text-ink-secondary transition-colors;
+    border-color: rgba(43, 44, 48, 0.14);
+    letter-spacing: -0.01em;
+  }
+
+  .answer-action-btn:hover {
+    @apply text-stamp-orange border-stamp-orange/40;
+  }
+
+  .home-hero {
+    @apply relative rounded-2xl border px-8 py-14 sm:px-12 sm:py-16 text-center bg-card;
+    border-color: rgba(43, 44, 48, 0.1);
+  }
+
+  .home-cta-row {
+    @apply flex flex-wrap items-center justify-center mt-8;
+    gap: 1.25rem 1.5rem;
+  }
+
+  .home-cta-primary {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    @apply inline-flex items-center justify-center min-h-[46px] px-7 py-3 text-[15px] text-white rounded-lg;
+    letter-spacing: -0.01em;
+    background: linear-gradient(135deg, #f75440, #c53b26);
+    box-shadow: 0 2px 12px rgba(247, 84, 64, 0.28);
+  }
+
+  .home-cta-secondary {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    @apply inline-flex items-center justify-center min-h-[46px] px-7 py-3 text-[15px] rounded-lg border bg-ground text-stamp-orange;
+    letter-spacing: -0.01em;
+    border-color: rgba(247, 84, 64, 0.45);
+  }
+
+  .home-feature-card {
+    @apply card block p-5 h-full transition-all duration-200 hover:border-stamp-orange/35 hover:shadow-card-hover;
+  }
+
+  .home-feature-card:hover .home-feature-title {
+    @apply text-stamp-orange;
+  }
+
+  .home-feature-title {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    @apply text-base text-ink transition-colors;
+    letter-spacing: -0.01em;
+  }
+
+  .font-heading {
+    font-family: var(--font-futura);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  .font-heading-sub {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    @apply text-base;
+    letter-spacing: -0.015em;
   }
 
   .markdown-body {
@@ -62,15 +398,21 @@ body {
   }
 
   .markdown-body h1 {
-    @apply text-2xl font-bold mt-8 mb-4 text-ink;
+    font-family: var(--font-futura);
+    font-weight: 500;
+    @apply text-2xl mt-8 mb-4 text-ink;
   }
 
   .markdown-body h2 {
-    @apply text-xl font-bold mt-6 mb-3 text-ink;
+    font-family: var(--font-futura);
+    font-weight: 550;
+    @apply text-xl mt-6 mb-3 text-ink;
   }
 
   .markdown-body h3 {
-    @apply text-lg font-semibold mt-5 mb-2 text-ink;
+    font-family: var(--font-futura);
+    font-weight: 550;
+    @apply text-lg mt-5 mb-2 text-ink;
   }
 
   .markdown-body p {
