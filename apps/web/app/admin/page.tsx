@@ -3,14 +3,22 @@
 import { useEffect, useState } from "react";
 import { getHealth, getStats, type HealthResponse, type StatsResponse } from "@/lib/api";
 
-function StatusBadge({ ok }: { ok: boolean }) {
+function StatusBadge({ ok }: { ok: boolean | string }) {
+  const good =
+    ok === true || ok === "ok";
+  const label =
+    typeof ok === "string"
+      ? ok
+      : ok
+        ? "ok"
+        : "down";
   return (
     <span
       className={`inline-flex items-center gap-1 text-sm font-semibold ${
-        ok ? "text-semantic-verified" : "text-stamp-orange"
+        good ? "text-semantic-verified" : ok === "stale" ? "text-semantic-review" : "text-stamp-orange"
       }`}
     >
-      {ok ? "✓" : "✗"}
+      {good ? "✓" : ok === "stale" ? "~" : "✗"} {typeof ok === "string" ? label : ""}
     </span>
   );
 }
@@ -69,6 +77,15 @@ export default function AdminPage() {
               ["Documents", stats.documents],
               ["Chunks", stats.chunks],
               ["Entities", stats.entities],
+              ["Relationships", stats.relationships],
+              [
+                "Project graph nodes",
+                stats.graph_project_nodes ?? stats.graph_nodes ?? 0,
+              ],
+              [
+                "Corpus graph nodes",
+                stats.graph_corpus_nodes ?? 0,
+              ],
               ["Ingestion jobs", stats.ingestion_jobs],
               ["Queries", stats.queries],
             ].map(([label, value]) => (

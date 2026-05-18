@@ -2,9 +2,11 @@
   "name": "stamped-intelligence",
   "private": true,
   "scripts": {
-    "dev": "pnpm --parallel -r run dev",
+    "dev": "pnpm --parallel --filter @stamped/api --filter @stamped/web --filter @stamped/discord-bot run dev",
     "dev:api": "pnpm --filter @stamped/api dev",
     "dev:web": "pnpm --filter @stamped/web dev",
+    "dev:bot": "pnpm --filter @stamped/discord-bot dev",
+    "discord:register": "pnpm --filter @stamped/discord-bot register-commands",
     "build": "pnpm -r run build",
     "db:generate": "pnpm --filter @stamped/database generate",
     "db:migrate": "pnpm --filter @stamped/database migrate:dev",

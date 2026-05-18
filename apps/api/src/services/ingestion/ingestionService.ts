@@ -178,6 +178,14 @@ export async function ingestParsedContent(
         : []),
     ]);
 
+    void import("../entities/documentEnrichment.js").then(({ enrichDocument }) =>
+      enrichDocument(document.id),
+    );
+
+    void import("../graph/graphBuildService.js").then(({ scheduleCorpusGraphRebuild }) =>
+      scheduleCorpusGraphRebuild(),
+    );
+
     return {
       documentId: document.id,
       jobId: job?.id ?? "",

@@ -5,6 +5,9 @@ dist/
 .env.local
 *.log
 uploads/
+data/corpus/
+graphify-out/
+.graphify_*
 .DS_Store
 coverage/
 .turbo/

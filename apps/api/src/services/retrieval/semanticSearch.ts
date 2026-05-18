@@ -40,6 +40,17 @@ function buildFilter(filters?: QueryRequest["filters"]) {
     });
   }
 
+  if (filters.date_from || filters.date_to) {
+    const range: Record<string, string> = {};
+    if (filters.date_from) {
+      range.gte = new Date(filters.date_from).toISOString();
+    }
+    if (filters.date_to) {
+      range.lte = new Date(filters.date_to).toISOString();
+    }
+    must.push({ key: "ingested_at", range });
+  }
+
   if (must.length === 0) return undefined;
   return { must };
 }

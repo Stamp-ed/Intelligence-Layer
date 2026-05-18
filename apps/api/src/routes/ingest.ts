@@ -9,7 +9,7 @@ import { parseFileBuffer, SUPPORTED_EXTENSIONS, getFileExtension } from "../serv
 import { parseText } from "../services/ingestion/parsers/textParser.js";
 import { prisma } from "../lib/prisma.js";
 import { runBatchIngestion } from "../services/ingestion/batchIngestion.js";
-import { ingestFromBuffer, ingestParsedContent, ingestTextContent } from "../services/ingestion/ingestionService.js";
+import { ingestFromBuffer, ingestParsedContent } from "../services/ingestion/ingestionService.js";
 
 const ALLOWED_UPLOAD = [...SUPPORTED_EXTENSIONS, ".json"];
 
@@ -19,7 +19,7 @@ const upload = multer({
   fileFilter: (_req, file, cb) => {
     const ext = getFileExtension(file.originalname);
     if (!ALLOWED_UPLOAD.includes(ext as (typeof ALLOWED_UPLOAD)[number])) {
-      cb(new Error("Only .txt, .md, .pdf, and .json files are allowed"));
+      cb(new Error("Only .txt, .md, .pdf, .docx, and .json files are allowed"));
       return;
     }
     cb(null, true);
@@ -31,16 +31,29 @@ export const ingestRouter = Router();
 ingestRouter.post("/text", async (req, res, next) => {
   try {
     const body = ingestTextSchema.parse(req.body);
+    const sourceType =
+      body.source_type === "markdown"
+        ? "markdown"
+        : body.source_type === "discord"
+          ? "discord"
+          : "note";
+
     const parsed = parseText(body.content, {
       title: body.title,
-      sourceType: body.source_type === "markdown" ? "markdown" : "note",
+      sourceType,
     });
 
-    const result = await ingestTextContent(parsed, {
-      author: body.author,
-      channel: body.channel,
-      metadata: body.metadata as Prisma.InputJsonValue | undefined,
-    });
+    const result = await ingestParsedContent(
+      parsed,
+      {
+        sourceId: body.source_id,
+        author: body.author,
+        channel: body.channel,
+        url: body.url,
+        metadata: body.metadata as Prisma.InputJsonValue | undefined,
+      },
+      { jobType: body.source_type === "discord" ? "discord_live" : "text_upload" },
+    );
 
     res.status(result.duplicate ? 200 : 201).json({
       document_id: result.documentId,
@@ -72,13 +85,28 @@ ingestRouter.post("/file", upload.single("file"), async (req, res, next) => {
     }
 
     const parsed = await parseFileBuffer(req.file.buffer, fileName);
+    let extraMeta: Record<string, unknown> = {};
+    const rawMeta = req.body?.metadata;
+    if (typeof rawMeta === "string" && rawMeta.trim()) {
+      try {
+        extraMeta = JSON.parse(rawMeta) as Record<string, unknown>;
+      } catch {
+        extraMeta = {};
+      }
+    } else if (rawMeta && typeof rawMeta === "object") {
+      extraMeta = rawMeta as Record<string, unknown>;
+    }
+
     const result = await ingestFromBuffer(parsed, {
       fileName,
+      sourceId: (req.body?.source_id as string) || undefined,
       author: (req.body?.author as string) || undefined,
       channel: (req.body?.channel as string) || undefined,
+      url: (req.body?.url as string) || undefined,
       metadata: {
         file_name: fileName,
         ...(parsed.metadata ?? {}),
+        ...extraMeta,
       } as Prisma.InputJsonValue,
     });
 

@@ -1,6 +1,8 @@
 import { config as loadEnv } from "dotenv";
 import { resolve } from "path";
 
+const repoRoot = resolve(process.cwd(), "../..");
+
 loadEnv({ path: resolve(process.cwd(), ".env.local") });
 loadEnv({ path: resolve(process.cwd(), "../../.env.local") });
 loadEnv({ path: resolve(process.cwd(), ".env") });
@@ -46,6 +48,22 @@ export const config = {
     .split(",")
     .map((r) => r.trim())
     .filter(Boolean),
+
+  repoRoot,
+
+  graphifyCorpusDir:
+    process.env.GRAPHIFY_CORPUS_DIR ?? resolve(repoRoot, "data/corpus"),
+  graphifyOutDir:
+    process.env.GRAPHIFY_OUT_DIR ?? resolve(repoRoot, "graphify-out"),
+  graphifyCorpusGraphJson:
+    process.env.GRAPHIFY_CORPUS_GRAPH_JSON ??
+    resolve(repoRoot, "graphify-out/corpus/graph.json"),
+  graphExpansionEnabled:
+    (process.env.GRAPH_EXPANSION_ENABLED ?? "false").toLowerCase() === "true",
+  pythonPath: process.env.PYTHON_PATH ?? "py",
+
+  retrievalMinScore: parseFloat(process.env.RETRIEVAL_MIN_SCORE ?? "0.28"),
+  retrievalSemanticLimit: parseInt(process.env.RETRIEVAL_SEMANTIC_LIMIT ?? "30", 10),
 };
 
 export function getQdrantUrl(): string {

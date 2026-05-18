@@ -58,6 +58,7 @@ model Entity {
   entityType   String   @map("entity_type") @db.VarChar(100)
   description  String?
   aliases      String[] @default([])
+  graphNodeId  String?  @map("graph_node_id") @db.VarChar(255)
   mentionCount Int      @default(1) @map("mention_count")
   firstSeenAt  DateTime @default(now()) @map("first_seen_at")
   lastSeenAt   DateTime @default(now()) @map("last_seen_at")
@@ -83,6 +84,7 @@ model EntityMention {
   chunk    Chunk    @relation(fields: [chunkId], references: [id], onDelete: Cascade)
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
+  @@unique([entityId, chunkId])
   @@index([entityId])
   @@map("entity_mentions")
 }
@@ -145,4 +147,28 @@ model IngestionJob {
   metadata       Json      @default("{}")
 
   @@map("ingestion_jobs")
+}
+
+model DiscordChannelSubscription {
+  id          String   @id @default(uuid()) @db.Uuid
+  guildId     String   @map("guild_id") @db.VarChar(32)
+  channelId   String   @unique @map("channel_id") @db.VarChar(32)
+  channelName String?  @map("channel_name") @db.VarChar(255)
+  enabled     Boolean  @default(true)
+  enabledBy   String?  @map("enabled_by") @db.VarChar(32)
+  enabledAt   DateTime @default(now()) @map("enabled_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([guildId])
+  @@map("discord_channel_subscriptions")
+}
+
+model DiscordIngestCursor {
+  channelId        String    @id @map("channel_id") @db.VarChar(32)
+  lastMessageId    String?   @map("last_message_id") @db.VarChar(32)
+  lastPollAt       DateTime? @map("last_poll_at")
+  lastBackfillAt   DateTime? @map("last_backfill_at")
+  lastLiveIngestAt DateTime? @map("last_live_ingest_at")
+
+  @@map("discord_ingest_cursors")
 }

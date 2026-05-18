@@ -1,3 +1,4 @@
+import { parseDocx } from "./docxParser.js";
 import { parseMarkdown } from "./markdownParser.js";
 import { parsePdf } from "./pdfParser.js";
 import { parseText, type ParsedDocument } from "./textParser.js";
@@ -6,7 +7,7 @@ export function getFileExtension(fileName: string): string {
   return fileName.toLowerCase().match(/\.[^.]+$/)?.[0] ?? "";
 }
 
-export const SUPPORTED_EXTENSIONS = [".txt", ".md", ".markdown", ".pdf"] as const;
+export const SUPPORTED_EXTENSIONS = [".txt", ".md", ".markdown", ".pdf", ".docx"] as const;
 
 export async function parseFileBuffer(
   buffer: Buffer,
@@ -16,6 +17,16 @@ export async function parseFileBuffer(
 
   if (ext === ".pdf") {
     const parsed = await parsePdf(buffer, { fileName });
+    return {
+      title: parsed.title,
+      content: parsed.content,
+      sourceType: parsed.sourceType,
+      metadata: parsed.metadata,
+    };
+  }
+
+  if (ext === ".docx") {
+    const parsed = await parseDocx(buffer, { fileName });
     return {
       title: parsed.title,
       content: parsed.content,

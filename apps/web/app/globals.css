@@ -46,4 +46,81 @@ body {
   .section-label {
     @apply text-[10px] font-bold uppercase tracking-[0.12em] text-stamp-orange;
   }
+
+  .markdown-body {
+    @apply text-ink leading-relaxed;
+  }
+
+  .markdown-body h1 {
+    @apply text-2xl font-bold mt-8 mb-4 text-ink;
+  }
+
+  .markdown-body h2 {
+    @apply text-xl font-bold mt-6 mb-3 text-ink;
+  }
+
+  .markdown-body h3 {
+    @apply text-lg font-semibold mt-5 mb-2 text-ink;
+  }
+
+  .markdown-body p {
+    @apply my-3;
+  }
+
+  .markdown-body ul,
+  .markdown-body ol {
+    @apply my-3 pl-6;
+  }
+
+  .markdown-body ul {
+    @apply list-disc;
+  }
+
+  .markdown-body ol {
+    @apply list-decimal;
+  }
+
+  .markdown-body li {
+    @apply my-1;
+  }
+
+  .markdown-body code {
+    @apply text-sm px-1 py-0.5 rounded bg-raised font-mono;
+  }
+
+  .markdown-body pre {
+    @apply my-4 p-4 rounded overflow-x-auto text-sm bg-raised border;
+    border-color: rgba(43, 44, 48, 0.1);
+  }
+
+  .markdown-body pre code {
+    @apply p-0 bg-transparent;
+  }
+
+  .markdown-body blockquote {
+    @apply my-4 pl-4 border-l-[3px] border-l-stamp-orange text-ink-secondary italic;
+  }
+
+  .markdown-body a {
+    @apply text-stamp-orange underline font-medium;
+  }
+
+  .markdown-body table {
+    @apply w-full my-4 text-sm border-collapse;
+  }
+
+  .markdown-body th,
+  .markdown-body td {
+    @apply border px-3 py-2 text-left;
+    border-color: rgba(43, 44, 48, 0.12);
+  }
+
+  .markdown-body th {
+    @apply bg-raised font-semibold;
+  }
+
+  .markdown-body hr {
+    @apply my-8 border-t;
+    border-color: rgba(43, 44, 48, 0.12);
+  }
 }

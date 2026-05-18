@@ -24,6 +24,12 @@ export default function HomePage() {
         <Link href="/documents" className="btn-secondary">
           Browse Documents
         </Link>
+        <Link href="/graph" className="btn-secondary">
+          Knowledge Graph
+        </Link>
+        <Link href="/entities" className="btn-secondary">
+          Browse Entities
+        </Link>
       </div>
     </div>
   );

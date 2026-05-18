@@ -1,6 +1,6 @@
 # Stamped Intelligence System — Cursor Build Prompt
 ### Comprehensive AI Development Specification for Full-Stack Implementation
-**Version:** 1.0 | **Prepared for:** Cursor AI | **Classification:** Internal Build Reference
+**Version:** 1.2 | **Prepared for:** Cursor AI | **Classification:** Internal Build Reference
 
 ---
 
@@ -11,6 +11,21 @@ You are building **Stamped Intelligence System V1**, an internal AI-powered orga
 This document is your **complete source of truth**. Every architectural decision, design constraint, component, API contract, data model, and phase boundary is defined here. Do not infer, improvise, or deviate from these specifications unless a section explicitly grants you discretion.
 
 Read the entire document before writing a single line of code.
+
+### 0.1 Implementation alignment (V1.1 — as built)
+
+The following deviations from the original v1.0 spec are **intentional** and supersede conflicting details below:
+
+| Area | Original spec | As implemented |
+|------|---------------|----------------|
+| API | FastAPI + SQLAlchemy | **Express + TypeScript + Prisma** (pnpm monorepo) |
+| Graph store | Memgraph (Bolt, ~1.7GB Docker image) | **Graphify** — file-based graph (`graphify-out/`), no graph DB container |
+| Postgres | Local Docker optional | **Supabase** supported via `DATABASE_URL` + `DIRECT_URL` |
+| Memgraph | Required for health + graph expansion | **Removed** — not used in V1 |
+| Discord ingestion | Discord scraper (unspecified) | **Discord bot** (`apps/discord-bot`) — scheduled poll (default 6h), optional live gateway; plus manual Chat Exporter JSON (`POST /ingest/discord`) |
+| File types | PDF, MD, Google Docs | **+ DOCX** via `mammoth` parser; Google Docs still manual export in V1 |
+
+**Data stores in production V1:** PostgreSQL (metadata + entities + Discord channel subscriptions) · Qdrant (vectors) · Graphify artifacts (exploration graph).
 
 ---
 
@@ -123,7 +138,7 @@ Primary knowledge sources:
                              ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    INGESTION LAYER                           │
-│  File parsers │ Discord scraper │ Metadata extractor         │
+│  File parsers │ Discord ingest bot │ Metadata extractor      │
 │  Chunker │ Preprocessor │ Deduplicator                       │
 └────────────────────────────┬────────────────────────────────┘
                              │
@@ -136,17 +151,18 @@ Primary knowledge sources:
 └──────────┬──────────────────┬──────────────────┬────────────┘
            │                  │                  │
            ▼                  ▼                  ▼
-┌──────────────┐   ┌──────────────┐   ┌──────────────────┐
-│  PostgreSQL  │   │    Qdrant    │   │    Memgraph      │
-│  (metadata)  │   │  (vectors)   │   │ (relationships)  │
-└──────────────┘   └──────────────┘   └──────────────────┘
+┌──────────────┐   ┌──────────────┐   ┌──────────────────────────────┐
+│  PostgreSQL  │   │    Qdrant    │   │  Graphify (corpus graph)      │
+│  (metadata,  │   │  (vectors)   │   │  graph.json · graph.html      │
+│   entities)  │   │              │   │  GRAPH_REPORT.md (optional)   │
+└──────────────┘   └──────────────┘   └──────────────────────────────┘
            │                  │                  │
-           └──────────┬───────┘──────────────────┘
+           └──────────┬───────┴──────────────────┘
                       │
                       ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                  RETRIEVAL LAYER                             │
-│  Semantic search (Qdrant) │ Graph expansion (Memgraph)       │
+│  Semantic search (Qdrant) │ Graph-assisted expansion (Graphify) │
 │  Metadata filtering (PostgreSQL) │ Context assembly           │
 └────────────────────────────┬────────────────────────────────┘
                              │
@@ -159,16 +175,20 @@ Primary knowledge sources:
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    FastAPI BACKEND                           │
-│  Ingestion APIs │ Query APIs │ Admin APIs                    │
-│  Source attribution │ Conversation management                │
+│                 EXPRESS API (TypeScript)                     │
+│  Ingestion │ Query │ Documents │ Entities │ Graph │ Admin    │
 └────────────────────────────┬────────────────────────────────┘
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                    FRONTEND (NEXT.JS)                        │
-│  Chat interface │ Source browser │ Knowledge graph viewer     │
-│  Admin dashboard │ Ingestion status                          │
+│  Query │ Documents │ Ingest │ Knowledge Graph │ Admin      │
+└─────────────────────────────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│              CURSOR AGENT (/graphify skill)                  │
+│  Build / refresh corpus graph · query · path · explain       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -176,19 +196,48 @@ Primary knowledge sources:
 
 | Layer | Technology | Version | Rationale |
 |---|---|---|---|
-| Backend framework | FastAPI | Latest stable | Async, fast, clean API design |
-| Primary database | PostgreSQL | 15+ | Metadata, chunk registry, document registry |
+| Backend framework | Express + TypeScript | Latest stable | Matches monorepo; thin REST layer over services |
+| Primary database | PostgreSQL (Supabase) | 15+ | Metadata, chunks, entities, relationships |
+| ORM | Prisma | 6+ | Migrations, type-safe access (`packages/database`) |
 | Vector database | Qdrant | Latest stable | Semantic search, embedding storage |
-| Graph database | Memgraph | Latest stable | Entity relationships, knowledge graph |
+| Knowledge graph | **Graphify** (`graphifyy` pip) | Latest | Corpus-wide graph; no heavy graph DB container |
 | Embedding model | OpenAI text-embedding-3-small | — | Cost-effective, high quality for V1 |
-| Standard AI model | GPT-4.1-mini | — | Retrieval-augmented responses |
-| Strategic AI model | GPT-4.1 | — | Complex synthesis, multi-source reasoning |
+| Standard AI model | GPT-4.1-mini (or `gpt-4o-mini` per env) | — | Retrieval-augmented responses |
+| Strategic AI model | GPT-4.1 (or `gpt-4o` per env) | — | Complex synthesis, multi-source reasoning |
 | Frontend | Next.js 14+ | App Router | React-based, SSR capable |
 | Styling | Tailwind CSS | Latest | Utility-first, matches design system |
-| Container orchestration | Docker Compose | — | Local dev + staging deployment |
-| ORM | SQLAlchemy (async) | 2.0+ | PostgreSQL access |
-| Task queue | None (V1) | — | Synchronous ingestion is sufficient for V1 |
+| Container orchestration | Docker Compose | — | Qdrant (+ optional local Postgres); **no Memgraph** |
+| Task queue | None (V1) | — | Synchronous ingestion; Graphify rebuild is on-demand |
 | Authentication | Simple token-based (V1) | — | Internal tool only |
+
+### 3.4 Graphify — knowledge graph (replaces Memgraph)
+
+**Graphify** builds auditable knowledge graphs as **versioned files** (not a graph database). There are **two separate graphs**:
+
+| Graph | Source | Output directory |
+|-------|--------|------------------|
+| **Project** | Codebase (`apps/`, `packages/`, `scripts/`, README, spec) | `graphify-out/project/` |
+| **Corpus** | Ingested documents (exported to `data/corpus/`) | `graphify-out/corpus/` |
+
+Each directory contains:
+
+| Artifact | Purpose |
+|----------|---------|
+| `graph.json` | Node-link graph (GraphRAG-ready); used for graph-assisted retrieval |
+| `graph.html` | Interactive visualization — embedded on `/graph` in the web UI |
+| `GRAPH_REPORT.md` | God nodes, surprising connections, suggested questions, cohesion scores |
+| `cost.json` | Cumulative extraction token usage |
+
+**Honesty model:** edges are tagged `EXTRACTED`, `INFERRED`, or `AMBIGUOUS` — the report surfaces what was found vs inferred.
+
+**Two ways to run Graphify:**
+
+1. **Cursor agent** — `/graphify` skill (see repo `.cursor/skills/graphify/` or user-global skill). Used by developers to explore the corpus, run `query`, `path`, `explain`.
+2. **Product** — API exports corpus → runs Graphify subprocess → serves `graph.html` on **Knowledge Graph** page; admin can trigger rebuild.
+
+**Corpus input for Graphify:** exported snapshot of all `documents.raw_content` into `data/corpus/` (one file per document, with YAML frontmatter: `document_id`, `source_type`, `channel`, `title`, `ingested_at`).
+
+**When to rebuild:** after bulk ingest, on demand from Admin/Graph page, or `--update` when documents change (incremental Graphify mode).
 
 ---
 
@@ -442,7 +491,7 @@ CREATE TABLE entity_mentions (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Relationships: links between entities (also stored in Memgraph)
+-- Relationships: links between entities (Postgres; mirrored in Graphify graph on rebuild)
 CREATE TABLE relationships (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     source_entity_id UUID REFERENCES entities(id),
@@ -515,23 +564,23 @@ CREATE TABLE ingestion_jobs (
 }
 ```
 
-### 5.3 Memgraph Graph Schema
+### 5.3 Graphify + PostgreSQL — knowledge representation
 
-```cypher
--- Node types
-(:Document {id, title, source_type, channel, ingested_at})
-(:Entity {id, name, entity_type, description})
-(:Concept {id, name, category})
+**PostgreSQL (structured, API-queryable):** `entities`, `entity_mentions`, `relationships` — see Section 5.1. Used for entity browser, filters, admin stats.
 
--- Relationship types
-(:Entity)-[:MENTIONED_IN]->(:Document)
-(:Entity)-[:COMPETES_WITH]->(:Entity)
-(:Entity)-[:RELATED_TO]->(:Entity)
-(:Entity)-[:PART_OF]->(:Entity)
-(:Document)-[:DISCUSSES]->(:Concept)
-(:Document)-[:REFERENCES]->(:Document)
-(:Concept)-[:CONNECTED_TO]->(:Concept)
-```
+**Graphify artifacts (`graphify-out/`):**
+
+| File | Role |
+|------|------|
+| `graph.json` | Node-link graph; graph-assisted retrieval; agent `/graphify query` |
+| `graph.html` | Interactive viz — embedded on `/graph` |
+| `GRAPH_REPORT.md` | God nodes, surprising connections, suggested questions |
+
+Edges use `confidence`: `EXTRACTED` | `INFERRED` | `AMBIGUOUS` plus `confidence_score`.
+
+**Corpus export** (`data/corpus/{document_id}.md`) — YAML frontmatter (`document_id`, `title`, `source_type`, `channel`, `ingested_at`) + body text. Graphify `source_file` maps back to `document_id` for chunk expansion.
+
+**Do not** use Memgraph, Neo4j, or Pinecone in V1.
 
 ### 5.4 API Request/Response Models
 
@@ -633,7 +682,7 @@ stamped-intelligence/
 │   │   │   │       └── text_parser.py
 │   │   │   ├── retrieval/
 │   │   │   │   ├── semantic_search.py   # Qdrant vector search
-│   │   │   │   ├── graph_expansion.py   # Memgraph context expansion
+│   │   │   │   ├── graphExpansion.ts    # graph.json traversal (Phase 3)
 │   │   │   │   ├── context_assembler.py # Combines search results into context
 │   │   │   │   └── reranker.py          # Optional result reranking
 │   │   │   └── ai/
@@ -699,6 +748,16 @@ GET    /api/v1/entities                 # List all entities
 GET    /api/v1/entities/{id}            # Get entity detail with relationships
 GET    /api/v1/entities/search          # Search entities by name
 GET    /api/v1/entities/{id}/mentions   # Get all mentions of an entity
+```
+
+#### Graph Endpoints (`/api/v1/graph`) — Phase 3
+
+```
+GET    /api/v1/graph/status             # built_at, node/edge counts, needs_rebuild
+POST   /api/v1/graph/rebuild            # Export corpus + run Graphify (async job)
+GET    /api/v1/graph/rebuild/{job_id}   # Rebuild job status
+GET    /api/v1/graph/insights           # God nodes, surprises, suggested questions (JSON)
+GET    /api/v1/graph/view               # Serve graph.html for /graph iframe
 ```
 
 #### Admin Endpoints (`/api/v1/admin`)
@@ -793,10 +852,11 @@ async def retrieve_and_answer(query: str, filters: QueryFilters, conversation_hi
     # Step 3: Extract entities from query
     query_entities = await extract_query_entities(query)
     
-    # Step 4: Graph expansion — find related chunks via Memgraph
-    related_chunk_ids = await memgraph_expand(
+    # Step 4: Graph-assisted expansion — traverse graphify-out/graph.json
+    related_chunk_ids = await graph_expand(
         entities=query_entities,
-        seed_chunk_ids=[r.id for r in semantic_results[:5]]
+        seed_chunk_ids=[r.id for r in semantic_results[:5]],
+        graph_path=settings.GRAPHIFY_GRAPH_JSON,
     )
     
     # Step 5: Fetch expanded chunks from PostgreSQL
@@ -868,6 +928,8 @@ frontend/
 │   ├── entities/
 │   │   ├── page.tsx                 # Entity browser
 │   │   └── [id]/page.tsx            # Entity detail with graph
+│   ├── graph/
+│   │   └── page.tsx                 # Knowledge Graph (Graphify graph.html + insights)
 │   ├── ingest/
 │   │   └── page.tsx                 # Ingestion interface
 │   └── admin/
@@ -961,7 +1023,7 @@ Ingestion job tracker: Table of recent jobs with status, progress bar, error det
 
 #### Admin Dashboard (`/admin`)
 
-System health panel: PostgreSQL ✅ | Qdrant ✅ | Memgraph ✅ | OpenAI API ✅
+System health panel: PostgreSQL ✅ | Qdrant ✅ | Graph ✅ | OpenAI API ✅
 
 Statistics: total documents by source type, total chunks, total entities by type, average query response time.
 
@@ -990,11 +1052,12 @@ QDRANT_HOST=localhost
 QDRANT_PORT=6333
 QDRANT_COLLECTION=stamped_chunks
 
-# Memgraph
-MEMGRAPH_HOST=localhost
-MEMGRAPH_PORT=7687
-MEMGRAPH_USER=
-MEMGRAPH_PASSWORD=
+# Graphify (Phase 3+)
+GRAPHIFY_CORPUS_DIR=./data/corpus
+GRAPHIFY_OUT_DIR=./graphify-out
+GRAPHIFY_CORPUS_GRAPH_JSON=./graphify-out/corpus/graph.json
+GRAPH_EXPANSION_ENABLED=false
+PYTHON_PATH=python
 
 # API
 API_SECRET_KEY=your_secret_key_for_internal_auth
@@ -1037,13 +1100,7 @@ services:
       - "6333:6333"
       - "6334:6334"
 
-  memgraph:
-    image: memgraph/memgraph-platform:latest
-    volumes:
-      - memgraph_data:/var/lib/memgraph
-    ports:
-      - "7687:7687"
-      - "7444:7444"
+  # Graph: Graphify file artifacts (graphify-out/) — no graph DB container
 
   backend:
     build: ./backend
@@ -1053,7 +1110,6 @@ services:
     depends_on:
       - postgres
       - qdrant
-      - memgraph
     volumes:
       - ./backend:/app
       - uploads:/app/uploads
@@ -1069,7 +1125,6 @@ services:
 volumes:
   postgres_data:
   qdrant_data:
-  memgraph_data:
   uploads:
 ```
 
@@ -1090,7 +1145,7 @@ The project is divided into **5 phases**. Build them in order. Each phase must b
 
 **1.1 Project Setup**
 - Initialize monorepo structure as specified in Section 6.1
-- Set up Docker Compose with PostgreSQL, Qdrant, and Memgraph
+- Set up Docker Compose with Qdrant (Postgres via Supabase or optional local Postgres)
 - Initialize FastAPI backend with async SQLAlchemy
 - Initialize Next.js 14 frontend with App Router and Tailwind CSS
 - Configure all environment variables
@@ -1123,7 +1178,7 @@ The project is divided into **5 phases**. Build them in order. Each phase must b
 - No styling polish required yet — just functional
 
 **1.5 Health & Admin**
-- Implement `GET /api/v1/admin/health` checking all three databases
+- Implement `GET /api/v1/admin/health` checking PostgreSQL, Qdrant, OpenAI (graph: optional until Phase 3)
 - Implement `GET /api/v1/admin/stats` with basic counts
 - Basic admin page in frontend showing health status
 
@@ -1197,74 +1252,106 @@ The project is divided into **5 phases**. Build them in order. Each phase must b
 - [ ] Discord JSON exports ingest with thread context preserved
 - [ ] Duplicate documents are detected and skipped
 - [ ] Document browser shows all ingested documents with filtering
-- [ ] Documents can be deleted and removed from all three databases
+- [ ] Documents can be deleted and removed from Postgres + Qdrant (graph marked stale)
 - [ ] Ingestion job tracker shows real-time progress
 
 ---
 
-### PHASE 3 — ENTITY EXTRACTION & KNOWLEDGE GRAPH
-**Goal:** Extract entities and relationships from ingested content. Build Memgraph graph. Add graph-expanded retrieval. Entity browser UI.
-**Duration estimate:** Week 3–4
-**Deliverable:** The system understands what its knowledge is about, not just what words are in it.
+### PHASE 2.9 — DISCORD INGEST BOT
+**Goal:** Connect a Discord bot to Stamped's server; per-channel enable/disable; scheduled poll ingest (default every 6h); optional live ingest; manual backfill commands. No pre-configured channel ID list required.
+**Deliverable:** Team runs `/ingest-on` in a channel; files (MD, PDF, DOCX) and messages flow into the Intelligence Layer API.
+
+#### Phase 2.9 Tasks
+
+**2.9.1 API prerequisites**
+- DOCX parser (`docxParser.ts` + `mammoth`)
+- Extend `SUPPORTED_EXTENSIONS` with `.docx`
+- `API_SECRET_KEY` middleware on `/api/v1/ingest/*`
+- Ingest text body: `source_id`, `url`, `source_type: discord`
+
+**2.9.2 Postgres**
+- `discord_channel_subscriptions` — per-channel enable flag (keyed by channel where `/ingest-on` runs)
+- `discord_ingest_cursors` — `last_message_id`, poll/backfill timestamps
+
+**2.9.3 `apps/discord-bot`**
+- discord.js v14; slash commands: `/ingest-on`, `/ingest-off`, `/ingest-backfill-all`, `/ingest-backfill-files`, `/ingest-backfill-since`
+- `channelSyncService` — shared ingest for poll, live, backfill
+- Scheduled poll: `DISCORD_POLL_INTERVAL_HOURS` (default 6)
+- Optional live: `DISCORD_LIVE_INGEST=true` + Message Content intent
+- `sourceId`: `discord:msg:{guild}:{channel}:{messageId}` / `discord:file:...:{attachmentId}`
+- Calls `POST /api/v1/ingest/text` and `/file` with API key
+
+**2.9.4 Env & ops**
+- See `.env.example` Discord section; rotate bot token if exposed; never commit secrets
+- `pnpm discord:register` then `pnpm dev:bot`
+
+**Phase 2.9 Exit Criteria:**
+- [ ] `/ingest-on` in a channel → after poll (or live if enabled), new messages/files appear in Documents
+- [ ] `/ingest-off` stops new ingest
+- [ ] Backfill commands populate history with dedup on re-run
+- [ ] DOCX attachments ingest successfully
+
+---
+
+### PHASE 3 — GRAPH INTELLIGENCE (Graphify + entities) — **REVIEW BEFORE BUILD**
+
+**Goal:** Structured entities in Postgres, corpus knowledge graph via **Graphify**, `/graph` page in the UI, optional graph-assisted retrieval. **No Memgraph.**
+
+**Duration estimate:** Week 3–4  
+**Deliverable:** The system knows *what* its knowledge is about (entities) and *how it connects* (Graphify graph + report).
+
+> **Status:** Phases 1–2 complete. Do not start Phase 3 until this plan is approved.
 
 #### Phase 3 Tasks
 
-**3.1 Entity Extraction Service**
-- Implement `entity_ai.py`: GPT-4.1-mini powered entity extraction using the prompt in Section 6.3
-- Run entity extraction on every chunk during ingestion
-- Store entities in PostgreSQL `entities` table with deduplication (same name + type = same entity)
-- Store entity mentions in `entity_mentions` table linking to chunks and documents
-- Track `mention_count`, `first_seen_at`, `last_seen_at` per entity
+**3.1 Entity extraction (Postgres)**
+- `entityExtractionService.ts` — GPT extraction (Section 6.3 prompt)
+- Run on ingest (or backfill job); dedupe by normalized name + type
+- `entities`, `entity_mentions`; optional `graph_node_id` after Graphify build
 
-**3.2 Relationship Extraction**
-- Implement relationship inference: when two entities appear in the same chunk, create a `MENTIONED_ALONGSIDE` relationship
-- Implement specific relationship detection:
-  - Competitor relationships: "FRISS competes with Stamped" → `COMPETES_WITH`
-  - Hierarchical: "Capture Engine is part of Stamped" → `PART_OF`
-  - Regulatory: "IRDAI regulates insurers" → `REGULATES`
-- Store in PostgreSQL `relationships` table AND in Memgraph
+**3.2 Relationships (Postgres only)**
+- Co-occurrence + typed relationships (`COMPETES_WITH`, `PART_OF`, `REGULATES`, etc.)
+- Store in `relationships` table only — **no graph DB writes**
 
-**3.3 Memgraph Integration**
-- Implement `memgraph_client.py` with async Bolt protocol connection
-- Implement graph write: create/update nodes and relationships in Memgraph
-- Implement graph read: given entity names or chunk IDs, find related entities and chunks
-- Implement `graph_expansion.py`: given seed chunk IDs, find connected chunks via shared entities
+**3.3 Document summarization**
+- `summarizer.ts` on ingest → `documents.summary` (2–4 sentences)
+- Display on document detail page
 
-**3.4 Enhanced Retrieval with Graph Expansion**
-- Update query pipeline to include graph expansion step (Section 6.3 retrieval flow)
-- Extract entities from incoming queries
-- Use entity matches to find additional relevant chunks beyond semantic search
-- Merge semantic results + graph-expanded results, rerank, select top 8
+**3.4 Corpus export**
+- `corpusExportService.ts` → `data/corpus/{document_id}.md` with YAML frontmatter
+- Mark graph stale when documents change
 
-**3.5 Document Summarization**
-- Implement `summarizer.py`: generate AI summaries for each document at ingestion time
-- Store summaries in `documents.summary` field
-- Summaries should be 2–4 sentences capturing the document's main purpose and key claims
-- Use GPT-4.1-mini for summarization
+**3.5 Graphify build (product + agent)**
+- `graphBuildService.ts` — export corpus → run Graphify (`pip install graphifyy`) → `graphify-out/`
+- API: `GET /api/v1/graph/status`, `POST /api/v1/graph/rebuild` (async job), `GET /api/v1/graph/insights`, `GET /api/v1/graph/view` (serve `graph.html`)
+- After batch ingest: flag `needs_rebuild` or auto-queue rebuild
+- **Cursor agent:** `/graphify data/corpus` (skill: `.cursor/skills/graphify/` or user-global graphify skill)
+- `.gitignore`: `graphify-out/`, `data/corpus/`
 
-**3.6 Entity Browser UI**
-- Entity list: searchable, filterable by entity type
-- Entity cards: name, type badge (color-coded), mention count, description
-- Entity detail page:
-  - Header: entity name, type, total mentions
-  - Mentions table: document title, channel, excerpt, date
-  - Related entities section: list of related entities with relationship type
-  - Simple graph visualization using React Flow or D3 force-directed layout
-- Entity type badges color scheme (semantic colors):
-  - insurer: `#1A6FC4` (semantic-info)
-  - competitor: `#C53B26` (orange-deep)
-  - regulation: `#B07800` (semantic-review)
-  - product_module: `#1E7E34` (semantic-verified)
-  - fraud_type: `#F75440` (stamp-orange)
-  - other: `rgba(43,44,48,0.55)` (ink-dim)
+**3.6 Graph-assisted retrieval**
+- `graphExpansion.ts` — traverse `graph.json`, BFS 2–3 hops, map nodes → chunk IDs via corpus manifest
+- Wire into query flow (Section 6.3); env `GRAPH_EXPANSION_ENABLED`
 
-**Phase 3 Exit Criteria:**
-- [ ] Entity extraction runs on all ingested documents
-- [ ] Entities are stored in PostgreSQL and Memgraph
-- [ ] Graph expansion improves query retrieval (verify with test queries)
-- [ ] Entity browser shows all extracted entities with filtering
-- [ ] Entity detail page shows mentions and related entities
-- [ ] Document summaries are generated and displayed
+**3.7 Knowledge Graph page (`/graph`)**
+- Embed `graph.html` (iframe or proxied static)
+- Panel: god nodes, surprising connections, suggested questions (from report or API)
+- Rebuild button + job polling; empty state when no graph
+
+**3.8 Entity browser**
+- `/entities`, `/entities/[id]` — Postgres data; "View in graph" when `graph_node_id` exists
+- Entity type badge colors (unchanged from v1.0 spec)
+
+**3.9 Admin**
+- Health: `graph: ok | missing | stale`
+- Stats: entity/relationship counts + graph node/edge counts
+
+**Phase 3 exit criteria:**
+- [ ] Entities + relationships in Postgres for ingested corpus
+- [ ] `graph.html` viewable at `/graph`; rebuild works from UI/API
+- [ ] Agent `/graphify` and product graph share same `graphify-out/` artifacts
+- [ ] (Stretch) Graph expansion improves cross-document entity queries
+
+**Out of scope:** Memgraph, Neo4j, per-chunk real-time graph sync, Obsidian vault in production
 
 ---
 
@@ -1410,7 +1497,7 @@ Create a `README.md` at project root covering:
 **5.7 Deployment Configuration**
 - Production Docker Compose with resource limits
 - Nginx reverse proxy config (if deploying to a VM)
-- Volume backup script for PostgreSQL, Qdrant, and Memgraph data
+- Volume backup script for PostgreSQL, Qdrant; archive `graphify-out/` and `data/corpus/` if needed
 - `Makefile` with common commands:
   ```makefile
   make setup     # First-time setup, create .env, run migrations
@@ -1443,7 +1530,7 @@ These apply to every phase and every component.
 - Use TypeScript (strict mode) in all frontend files
 - No `any` types in TypeScript without explicit justification comment
 - Maximum function length: 50 lines. If longer, extract sub-functions.
-- Every external API call (OpenAI, Qdrant, Memgraph) wrapped in try/catch
+- Every external API call (OpenAI, Qdrant) and Graphify subprocess wrapped in try/catch
 - No secrets in code — all configuration via environment variables
 - All async operations properly awaited
 - No silent failures — every exception either handled or logged
@@ -1459,7 +1546,7 @@ These apply to every phase and every component.
 ### 10.3 Data Integrity
 
 - Every chunk must have a corresponding document record
-- Deleting a document cascades to: chunks (PostgreSQL), vectors (Qdrant), entity mentions (PostgreSQL), relationships (PostgreSQL + Memgraph)
+- Deleting a document cascades to: chunks (PostgreSQL), vectors (Qdrant), entity mentions (PostgreSQL), relationships (PostgreSQL); mark graph `needs_rebuild`
 - Content hashing prevents duplicate ingestion
 - Ingestion jobs are atomic: either the entire document ingests or it fails cleanly with error logged
 
@@ -1502,6 +1589,7 @@ Use these as acceptance test cases to validate retrieval quality across phases:
 - Do not implement multi-user authentication or role-based access in V1
 - Do not implement GitHub ingestion in V1
 - Do not use Pinecone, Weaviate, or any vector database other than Qdrant
+- Do not use Memgraph, Neo4j, or any dedicated graph database for V1 — use Graphify artifacts + Postgres entities
 - Do not use LangChain or LlamaIndex — implement all retrieval logic directly
 
 ---
@@ -1518,4 +1606,4 @@ Start with Phase 1. Build it completely. Test it. Then proceed.
 
 ---
 
-*Stamped Intelligence System — Cursor Build Prompt v1.0 | April 2026 | Internal Use Only*
+*Stamped Intelligence System — Cursor Build Prompt v1.1 | May 2026 | Internal Use Only*

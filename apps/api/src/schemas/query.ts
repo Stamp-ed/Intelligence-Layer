@@ -2,6 +2,8 @@ import { z } from "zod";
 
 export const queryFiltersSchema = z.object({
   source_types: z.array(z.string()).optional(),
+  /** Search this channel first, then the rest of the corpus. */
+  primary_channel: z.string().min(1).optional(),
   channels: z.array(z.string()).optional(),
   date_from: z.string().datetime().optional(),
   date_to: z.string().datetime().optional(),

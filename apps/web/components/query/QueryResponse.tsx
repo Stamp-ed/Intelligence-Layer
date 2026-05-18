@@ -1,36 +1,51 @@
 import type { QueryResponse as QueryResponseType } from "@/lib/api";
+import { MarkdownContent } from "@/components/MarkdownContent";
 import { SourceCitationCard } from "./SourceCitation";
 
 interface QueryResponseProps {
   response: QueryResponseType;
 }
 
-export function QueryResponse({ response }: QueryResponseProps) {
-  return (
-    <div className="space-y-6">
-      <div
-        className="card p-6 border-l-[3px] border-l-stamp-orange"
-        style={{ background: "#F7F6F0" }}
-      >
-        <p className="section-label mb-2">Answer</p>
-        <div className="prose prose-sm max-w-none text-ink whitespace-pre-wrap">
-          {response.answer}
-        </div>
-        <p className="text-xs text-ink-dim mt-4 font-mono">
-          Model: {response.model_used}
-        </p>
-      </div>
+function modelBadge(model: string): string {
+  if (model.includes("gpt-4o") && !model.includes("mini")) {
+    return "Strategic synthesis";
+  }
+  return "Standard";
+}
 
-      {response.sources.length > 0 && (
-        <div>
-          <p className="section-label mb-3">Sources</p>
-          <div className="space-y-3">
-            {response.sources.map((source) => (
-              <SourceCitationCard key={source.chunk_id} source={source} />
-            ))}
-          </div>
+export function QueryResponse({ response }: QueryResponseProps) {
+  const badge = modelBadge(response.model_used);
+
+  return (
+    <>
+      <section className="space-y-6">
+        <div
+          className="card p-6 border-l-[3px] border-l-stamp-orange"
+          style={{ background: "#F7F6F0" }}
+        >
+          <header className="flex items-center justify-between gap-2 mb-3">
+            <p className="section-label mb-0">Answer</p>
+            <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 rounded bg-orange-mid text-ink">
+              {badge}
+            </span>
+          </header>
+          <MarkdownContent content={response.answer} />
+          <p className="text-xs text-ink-dim mt-4 font-mono">{response.model_used}</p>
         </div>
-      )}
-    </div>
+
+        {response.sources.length > 0 && (
+          <section>
+            <p className="section-label mb-3">Sources ({response.sources.length})</p>
+            <ul className="flex flex-wrap gap-2 list-none p-0 m-0">
+              {response.sources.map((source) => (
+                <li key={source.chunk_id}>
+                  <SourceCitationCard source={source} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </section>
+    </>
   );
 }

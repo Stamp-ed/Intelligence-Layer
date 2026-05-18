@@ -2,6 +2,7 @@ import type { Prisma } from "@stamped/database";
 import { prisma } from "../../lib/prisma.js";
 import { deleteChunkVectors } from "../../lib/qdrant.js";
 import { AppError } from "../../middleware/errorHandler.js";
+import { markGraphStale } from "../graph/graphBuildService.js";
 
 export interface DocumentListQuery {
   page?: number;
@@ -149,6 +150,7 @@ export async function deleteDocument(id: string): Promise<void> {
 
   await deleteChunkVectors(chunks.map((c) => c.id));
   await prisma.document.delete({ where: { id } });
+  markGraphStale("corpus");
 }
 
 export async function updateDocumentMetadata(

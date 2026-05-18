@@ -1,8 +1,15 @@
 import { openai } from "../../lib/openai.js";
 import { config } from "../../config.js";
 import { prisma } from "../../lib/prisma.js";
-import { semanticSearch } from "../retrieval/semanticSearch.js";
+import { channelAwareSearch } from "../retrieval/channelAwareSearch.js";
 import { assembleContext } from "../retrieval/contextAssembler.js";
+import { expandChunksViaGraph } from "../retrieval/graphExpansion.js";
+import { rerankSearchResults } from "../retrieval/reranker.js";
+import {
+  formatHistoryForPrompt,
+  getOrCreateConversation,
+} from "./conversationService.js";
+import { buildRetrievalQuery } from "./queryRewrite.js";
 import type { QueryRequest } from "../../schemas/query.js";
 
 const SYSTEM_PROMPT = `You are the Stamped Intelligence System — an internal AI assistant with access to Stamped's complete organizational knowledge base.
@@ -53,13 +60,59 @@ export async function retrieveAndAnswer(
       ? config.strategicModel
       : config.standardModel;
 
-  const searchResults = await semanticSearch(
-    request.query,
-    20,
+  const conversation = await getOrCreateConversation(request.conversation_id);
+  const history = formatHistoryForPrompt(conversation.messages);
+
+  const retrievalQuery = buildRetrievalQuery(request.query, history);
+
+  const searchResults = await channelAwareSearch(
+    retrievalQuery,
+    config.retrievalSemanticLimit,
     request.filters,
   );
 
-  const topChunks = searchResults.slice(0, 8);
+  const seedIds = searchResults.slice(0, 5).map((r) => r.chunkId);
+  const expandedIds = await expandChunksViaGraph(request.query, seedIds);
+
+  let merged = [...searchResults];
+  if (expandedIds.length > 0) {
+    const existing = new Set(merged.map((r) => r.chunkId));
+    const extraChunks = await prisma.chunk.findMany({
+      where: { id: { in: expandedIds } },
+      include: {
+        document: {
+          select: {
+            title: true,
+            sourceType: true,
+            channel: true,
+            author: true,
+          },
+        },
+      },
+    });
+    for (const chunk of extraChunks) {
+      if (existing.has(chunk.id)) continue;
+      merged.push({
+        chunkId: chunk.id,
+        documentId: chunk.documentId,
+        score: 0.35,
+        chunkText: chunk.chunkText,
+        title: chunk.document.title ?? "Untitled",
+        sourceType: chunk.document.sourceType,
+        channel: chunk.document.channel ?? "",
+        author: chunk.document.author ?? "",
+      });
+    }
+    merged.sort((a, b) => b.score - a.score);
+  }
+
+  const topChunks = rerankSearchResults(request.query, merged, {
+    maxChunks: 8,
+    minScore: config.retrievalMinScore,
+    maxChunksPerDocument: 2,
+    primaryChannel: request.filters?.primary_channel,
+  });
+
   const context = assembleContext(topChunks);
 
   const userMessage = `Retrieved context:\n\n${context || "(No relevant context found)"}\n\n---\n\nUser question: ${request.query}`;
@@ -69,6 +122,7 @@ export async function retrieveAndAnswer(
     max_tokens: config.maxTokensAnswer,
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
+      ...history,
       { role: "user", content: userMessage },
     ],
   });
@@ -104,11 +158,6 @@ export async function retrieveAndAnswer(
       };
     });
 
-  const sessionId = crypto.randomUUID();
-  const conversation = await prisma.conversation.create({
-    data: { sessionId, metadata: {} },
-  });
-
   await prisma.message.createMany({
     data: [
       {
@@ -127,6 +176,11 @@ export async function retrieveAndAnswer(
         modelUsed: model,
       },
     ],
+  });
+
+  await prisma.conversation.update({
+    where: { id: conversation.id },
+    data: { updatedAt: new Date() },
   });
 
   return {
