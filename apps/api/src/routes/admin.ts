@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma.js";
 import { checkOpenAIHealth } from "../lib/openai.js";
 import { checkQdrantHealth } from "../lib/qdrant.js";
 import { getGraphStatus } from "../services/graph/graphService.js";
+import { reindexAllVectors } from "../services/ingestion/reindexVectors.js";
 
 export const adminRouter = Router();
 
@@ -32,6 +33,19 @@ adminRouter.get("/health", async (_req, res) => {
       graph_corpus: graphCorpus,
     },
   });
+});
+
+adminRouter.post("/reindex-vectors", async (_req, res, next) => {
+  try {
+    const result = await reindexAllVectors();
+    res.json({
+      status: "completed",
+      ...result,
+      message: `Re-indexed ${result.chunks} chunks from ${result.documents} documents into Qdrant.`,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 adminRouter.get("/stats", async (_req, res, next) => {

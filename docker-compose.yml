@@ -15,7 +15,9 @@ services:
       timeout: 5s
       retries: 5
 
+  # Optional — only when not using Qdrant Cloud (set QDRANT_URL + QDRANT_API_KEY in .env instead)
   qdrant:
+    profiles: ["local-qdrant"]
     image: qdrant/qdrant:latest
     volumes:
       - qdrant_data:/qdrant/storage
@@ -37,13 +39,13 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql://stamped:${POSTGRES_PASSWORD:-stamped_dev_password}@postgres:5432/stamped_intelligence
-      QDRANT_HOST: qdrant
       POSTGRES_HOST: postgres
     depends_on:
       postgres:
         condition: service_healthy
       qdrant:
         condition: service_healthy
+        required: false
     volumes:
       - ./apps/api/src:/app/apps/api/src
       - ./packages/database:/app/packages/database

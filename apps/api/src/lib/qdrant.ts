@@ -1,9 +1,9 @@
 import { QdrantClient } from "@qdrant/js-client-rest";
-import { config, getQdrantUrl } from "../config.js";
+import { config, getQdrantClientOptions } from "../config.js";
 
 const VECTOR_SIZE = 1536;
 
-export const qdrant = new QdrantClient({ url: getQdrantUrl() });
+export const qdrant = new QdrantClient(getQdrantClientOptions());
 
 export async function ensureQdrantCollection(): Promise<void> {
   const collections = await qdrant.getCollections();

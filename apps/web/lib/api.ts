@@ -1,4 +1,6 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+import { getPublicApiUrl } from "./env";
+
+const API_URL = getPublicApiUrl();
 const API_KEY = process.env.NEXT_PUBLIC_API_SECRET_KEY ?? "";
 
 function apiHeaders(extra?: HeadersInit): HeadersInit {
@@ -34,7 +36,10 @@ async function requestNoContent(
   path: string,
   options: RequestInit = {},
 ): Promise<void> {
-  const res = await fetch(`${API_URL}${path}`, options);
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: apiHeaders(options.headers),
+  });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(

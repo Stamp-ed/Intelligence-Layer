@@ -11,3 +11,5 @@ graphify-out/
 .DS_Store
 coverage/
 .turbo/
+
+.vercel

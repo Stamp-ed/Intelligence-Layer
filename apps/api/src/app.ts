@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { config } from "./config.js";
+import { isAllowedCorsOrigin } from "./lib/cors.js";
 import { requireApiKey } from "./middleware/apiAuth.js";
 import { AppError, errorHandler } from "./middleware/errorHandler.js";
 import { ingestRouter } from "./routes/ingest.js";
@@ -18,7 +19,13 @@ export function createApp(): express.Application {
   app.use(helmet());
   app.use(
     cors({
-      origin: config.allowedOrigins,
+      origin(origin, callback) {
+        if (isAllowedCorsOrigin(origin)) {
+          callback(null, true);
+          return;
+        }
+        callback(null, false);
+      },
       credentials: true,
     }),
   );

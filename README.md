@@ -66,8 +66,9 @@ copy .env.example .env.local
 | `OPENAI_API_KEY` | Embeddings + chat |
 | `DATABASE_URL` | Supabase pooled URL (port 6543, `?pgbouncer=true`) |
 | `DIRECT_URL` | Supabase direct URL (port 5432) for migrations |
-| `QDRANT_HOST` | `localhost` |
-| `QDRANT_PORT` | `6333` |
+| `QDRANT_URL` | Cluster URL from [Qdrant Cloud](https://cloud.qdrant.io) (e.g. `https://….cloud.qdrant.io:6333`) |
+| `QDRANT_API_KEY` | API key from the cluster dashboard |
+| `QDRANT_COLLECTION` | `stamped_chunks` (created on API startup if missing) |
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8000` |
 
 **Optional:**
@@ -75,7 +76,8 @@ copy .env.example .env.local
 | Variable | Purpose |
 |----------|---------|
 | `INGEST_BATCH_ROOTS` | Comma-separated folders allowed for batch ingest |
-| `API_SECRET_KEY` | Shared secret if the web app sends authenticated API requests |
+| `API_SECRET_KEY` | Shared secret for **ingest** API routes |
+| `NEXT_PUBLIC_API_SECRET_KEY` | **Same value** as `API_SECRET_KEY` (web UI sends this on ingest requests) |
 
 ### 2. Install dependencies
 
@@ -150,7 +152,7 @@ The app is split into services — do not run Qdrant or the API on Vercel.
 | `apps/web` | Vercel (`NEXT_PUBLIC_API_URL` → public API URL) |
 | `apps/api` | Railway, Render, Fly.io, or a VPS (Node container) |
 | Postgres | Supabase |
-| Qdrant | Qdrant Cloud or Docker on the API host |
+| Qdrant | [Qdrant Cloud](https://cloud.qdrant.io) (`QDRANT_URL` + `QDRANT_API_KEY`) or local Docker profile |
 | `apps/discord-bot` | Same PaaS as the API (always-on worker) |
 
 ---
@@ -228,8 +230,24 @@ Confirm `[discord-bot] Logged in as …` before using slash commands. In a chann
 
 | Issue | Fix |
 |-------|-----|
-| `dockerDesktopLinuxEngine` not found | Start Docker Desktop, then `docker compose up qdrant -d` |
-| Qdrant unhealthy in admin | `docker compose ps` — confirm port 6333 |
+| Qdrant unhealthy in admin | Check `QDRANT_URL` and `QDRANT_API_KEY` in `.env.local`; cluster must be running in Cloud Console |
+| `401` / Qdrant connection errors | Regenerate API key; URL must include `https://` (set automatically if omitted) |
+| Search returns nothing after switching to Cloud | Re-index vectors (see below) — vectors live in Qdrant, not Postgres |
+| Ingestion jobs: **Invalid or missing API key** | Set `NEXT_PUBLIC_API_SECRET_KEY` in `.env.local` to the **same** value as `API_SECRET_KEY`, then restart `pnpm dev` |
+| Local Qdrant only | `docker compose --profile local-qdrant up qdrant -d` and use `QDRANT_HOST`/`QDRANT_PORT` instead of `QDRANT_URL` |
+
+### Re-index vectors into Qdrant (after Cloud migration)
+
+Postgres still has your documents, but a **new** Qdrant cluster has no embeddings. Re-running file ingest often skips as **duplicate** (same content hash). Instead, re-embed from the database:
+
+```powershell
+# With API running and API_SECRET_KEY set — use the same key in the header
+curl -X POST http://localhost:8000/api/v1/admin/reindex-vectors -H "Authorization: Bearer YOUR_API_SECRET_KEY"
+```
+
+Or use the same `Authorization: Bearer …` header as in `.env.local` (`API_SECRET_KEY`). This re-embeds every chunk and upserts to Qdrant (OpenAI usage applies).
+
+**Alternative:** delete documents in the UI and batch-ingest source files again from **Ingest → Batch**.
 | Prisma migrate fails | Use `DIRECT_URL` on port 5432 (not the pooler port) |
 | No chunks after ingest | Content must be long enough for chunks ≥100 tokens |
 | Batch path rejected | Add folder to `INGEST_BATCH_ROOTS` and restart the API |

@@ -1,5 +1,5 @@
 import { createApp } from "./app.js";
-import { config } from "./config.js";
+import { config, getQdrantClientOptions } from "./config.js";
 import { connectPrisma, disconnectPrisma } from "./lib/prisma.js";
 import { ensureQdrantCollection } from "./lib/qdrant.js";
 
@@ -10,7 +10,11 @@ async function main() {
   const app = createApp();
 
   const server = app.listen(config.port, () => {
-    console.log(`Stamped Intelligence API listening on port ${config.port}`);
+    const qdrant = getQdrantClientOptions();
+    const qdrantLabel = config.qdrantCloud ? "Qdrant Cloud" : "Qdrant";
+    console.log(
+      `Stamped Intelligence API listening on port ${config.port} (${qdrantLabel}: ${qdrant.url})`,
+    );
   });
 
   const shutdown = async () => {
