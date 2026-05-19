@@ -16,6 +16,7 @@ import {
   QueryFilters,
   type QueryFilterState,
 } from "@/components/query/QueryFilters";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 interface ThreadMessage {
   role: "user" | "assistant";
@@ -70,6 +71,10 @@ export default function QueryPage() {
   const [sourceTypes, setSourceTypes] = useState<string[]>([]);
   const [channels, setChannels] = useState<string[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    preview: string;
+  } | null>(null);
 
   const loadConversations = useCallback(async () => {
     try {
@@ -127,18 +132,25 @@ export default function QueryPage() {
     );
   }
 
-  async function handleDeleteConversation(id: string) {
+  function requestDeleteConversation(id: string) {
     const preview =
       conversations.find((c) => c.id === id)?.preview?.trim() || "Untitled";
-    const confirmed = window.confirm(
-      `Delete this conversation?\n\n"${preview.slice(0, 120)}${preview.length > 120 ? "…" : ""}"\n\nThis cannot be undone.`,
-    );
-    if (!confirmed) return;
+    setDeleteTarget({ id, preview });
+  }
 
+  function cancelDeleteConversation() {
+    if (deletingId) return;
+    setDeleteTarget(null);
+  }
+
+  async function confirmDeleteConversation() {
+    if (!deleteTarget) return;
+    const { id } = deleteTarget;
     setDeletingId(id);
     setError(null);
     try {
       await deleteConversation(id);
+      setDeleteTarget(null);
       if (conversationId === id) {
         startNewConversation();
       }
@@ -190,7 +202,34 @@ export default function QueryPage() {
   const hasThread = thread.length > 0;
 
   return (
-    <div className="flex -my-8 gap-6 lg:gap-8 items-start">
+    <>
+      <ConfirmDialog
+        open={deleteTarget != null}
+        title="Delete conversation?"
+        description={
+          <>
+            <span className="block mb-2">
+              This will permanently remove the conversation and all messages in
+              it. This cannot be undone.
+            </span>
+            <span className="block rounded-md border bg-raised px-3 py-2 text-ink text-sm border-[color:var(--surface-border)]">
+              {deleteTarget?.preview
+                ? deleteTarget.preview.length > 160
+                  ? `${deleteTarget.preview.slice(0, 160)}…`
+                  : deleteTarget.preview
+                : "Untitled"}
+            </span>
+          </>
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        loading={deletingId != null}
+        onConfirm={() => void confirmDeleteConversation()}
+        onCancel={cancelDeleteConversation}
+      />
+
+      <div className="flex -my-8 gap-6 lg:gap-8 items-start">
       {/* Recent sidebar */}
       <aside
         className="hidden lg:flex w-56 shrink-0 flex-col py-8 pr-4 border-r min-h-0"
@@ -220,7 +259,10 @@ export default function QueryPage() {
                     aria-label="Delete conversation"
                     title="Delete conversation"
                     disabled={isDeleting}
-                    onClick={() => void handleDeleteConversation(c.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      requestDeleteConversation(c.id);
+                    }}
                   >
                     {isDeleting ? "…" : "×"}
                   </button>
@@ -244,7 +286,7 @@ export default function QueryPage() {
               type="button"
               className="toolbar-btn text-stamp-orange"
               disabled={deletingId === conversationId}
-              onClick={() => void handleDeleteConversation(conversationId)}
+              onClick={() => requestDeleteConversation(conversationId)}
             >
               {deletingId === conversationId ? "Deleting…" : "Delete chat"}
             </button>
@@ -346,5 +388,6 @@ export default function QueryPage() {
         availableChannels={channels}
       />
     </div>
+    </>
   );
 }

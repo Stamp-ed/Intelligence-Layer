@@ -416,6 +416,52 @@ body {
     @apply text-stamp-orange border-stamp-orange/40;
   }
 
+  .confirm-dialog-root {
+    @apply fixed inset-0 z-[100] flex items-center justify-center p-4;
+    background-color: rgba(43, 44, 48, 0.45);
+  }
+
+  [data-theme="dark"] .confirm-dialog-root {
+    background-color: rgba(0, 0, 0, 0.55);
+  }
+
+  .confirm-dialog-panel {
+    @apply w-full max-w-md rounded-xl border bg-card shadow-card p-6;
+    border-color: var(--surface-border);
+  }
+
+  .confirm-dialog-title {
+    font-family: var(--font-futura);
+    font-weight: 600;
+    @apply text-lg text-ink tracking-tight;
+    letter-spacing: -0.02em;
+  }
+
+  .confirm-dialog-description {
+    font-family: var(--font-body);
+    @apply text-sm text-ink-secondary mt-2 leading-relaxed;
+  }
+
+  .confirm-dialog-actions {
+    @apply flex flex-wrap justify-end gap-3 mt-6;
+  }
+
+  .confirm-dialog-btn-danger {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    letter-spacing: -0.01em;
+    @apply inline-flex items-center justify-center min-h-[40px] px-5 text-[15px] rounded-lg border bg-stamp-orange text-white;
+    border-color: color-mix(in srgb, var(--stamp-orange) 85%, #000);
+  }
+
+  .confirm-dialog-btn-danger:hover:not(:disabled) {
+    @apply brightness-110;
+  }
+
+  .confirm-dialog-btn-danger:disabled {
+    @apply opacity-60 cursor-not-allowed;
+  }
+
   .home-hero {
     @apply relative rounded-2xl border px-8 py-14 sm:px-12 sm:py-16 text-center bg-card;
     border-color: var(--surface-border);
