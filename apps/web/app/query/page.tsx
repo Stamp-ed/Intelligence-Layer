@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  deleteConversation,
   getConversation,
   getDocumentFilters,
   listConversations,
@@ -68,6 +69,7 @@ export default function QueryPage() {
   const [filters, setFilters] = useState<QueryFilterState>(emptyFilters);
   const [sourceTypes, setSourceTypes] = useState<string[]>([]);
   const [channels, setChannels] = useState<string[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadConversations = useCallback(async () => {
     try {
@@ -125,6 +127,31 @@ export default function QueryPage() {
     );
   }
 
+  async function handleDeleteConversation(id: string) {
+    const preview =
+      conversations.find((c) => c.id === id)?.preview?.trim() || "Untitled";
+    const confirmed = window.confirm(
+      `Delete this conversation?\n\n"${preview.slice(0, 120)}${preview.length > 120 ? "…" : ""}"\n\nThis cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    setDeletingId(id);
+    setError(null);
+    try {
+      await deleteConversation(id);
+      if (conversationId === id) {
+        startNewConversation();
+      }
+      setConversations((prev) => prev.filter((c) => c.id !== id));
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to delete conversation",
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   const handleSubmit = async () => {
     if (!query.trim()) return;
     const userText = query.trim();
@@ -174,18 +201,30 @@ export default function QueryPage() {
           <ul className="space-y-0.5 flex-1 overflow-y-auto min-h-0 list-none p-0 m-0">
             {conversations.map((c) => {
               const isActive = conversationId === c.id;
+              const isDeleting = deletingId === c.id;
               return (
-              <li key={c.id}>
-                <button
-                  type="button"
-                  onClick={() => void loadConversation(c.id)}
-                  className={`recent-sidebar-item ${isActive ? "is-active" : ""}`}
-                >
-                  <span className="recent-sidebar-item-preview">
-                    {c.preview || "Untitled"}
-                  </span>
-                </button>
-              </li>
+                <li key={c.id} className="recent-sidebar-row group">
+                  <button
+                    type="button"
+                    onClick={() => void loadConversation(c.id)}
+                    disabled={isDeleting}
+                    className={`recent-sidebar-item ${isActive ? "is-active" : ""}`}
+                  >
+                    <span className="recent-sidebar-item-preview">
+                      {c.preview || "Untitled"}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="recent-sidebar-delete"
+                    aria-label="Delete conversation"
+                    title="Delete conversation"
+                    disabled={isDeleting}
+                    onClick={() => void handleDeleteConversation(c.id)}
+                  >
+                    {isDeleting ? "…" : "×"}
+                  </button>
+                </li>
               );
             })}
             {conversations.length === 0 && (
@@ -200,6 +239,16 @@ export default function QueryPage() {
       {/* Center — chat-style */}
       <section className="flex-1 flex flex-col min-w-0 relative min-h-[calc(100vh-10rem)]">
         <div className="flex flex-wrap items-center justify-end gap-3 shrink-0 pt-2 pb-4 pr-1 z-10">
+          {conversationId && (
+            <button
+              type="button"
+              className="toolbar-btn text-stamp-orange"
+              disabled={deletingId === conversationId}
+              onClick={() => void handleDeleteConversation(conversationId)}
+            >
+              {deletingId === conversationId ? "Deleting…" : "Delete chat"}
+            </button>
+          )}
           <button
             type="button"
             className="toolbar-btn"

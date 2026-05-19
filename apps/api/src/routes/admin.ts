@@ -7,8 +7,37 @@ import { config } from "../config.js";
 import { qdrant } from "../lib/qdrant.js";
 import { getGraphStatus } from "../services/graph/graphService.js";
 import { reindexAllVectors } from "../services/ingestion/reindexVectors.js";
+import { updateModelSettingsSchema } from "../schemas/admin.js";
+import {
+  getModelCatalog,
+  getModelSettings,
+  updateModelSettings,
+} from "../services/admin/modelSettingsService.js";
+import { requireApiKey } from "../middleware/apiAuth.js";
 
 export const adminRouter = Router();
+
+adminRouter.get("/model-settings", async (_req, res, next) => {
+  try {
+    const [settings, catalog] = await Promise.all([
+      getModelSettings(),
+      Promise.resolve(getModelCatalog()),
+    ]);
+    res.json({ ...catalog, settings });
+  } catch (err) {
+    next(err);
+  }
+});
+
+adminRouter.patch("/model-settings", requireApiKey, async (req, res, next) => {
+  try {
+    const body = updateModelSettingsSchema.parse(req.body);
+    const settings = await updateModelSettings(body);
+    res.json({ settings });
+  } catch (err) {
+    next(err);
+  }
+});
 
 adminRouter.get("/health", async (_req, res) => {
   const [postgres, qdrant, openai, graph, retrieval] = await Promise.all([

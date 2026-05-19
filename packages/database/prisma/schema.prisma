@@ -172,3 +172,14 @@ model DiscordIngestCursor {
 
   @@map("discord_ingest_cursors")
 }
+
+/// Single-row runtime AI model configuration (editable from Admin UI).
+model SystemConfig {
+  id             String   @id @default("default") @db.VarChar(32)
+  standardModel  String   @default("gpt-4o-mini") @map("standard_model") @db.VarChar(100)
+  strategicModel String   @default("gpt-4o") @map("strategic_model") @db.VarChar(100)
+  embeddingModel String   @default("text-embedding-3-small") @map("embedding_model") @db.VarChar(100)
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("system_config")
+}

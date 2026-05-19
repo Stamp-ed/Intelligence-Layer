@@ -334,10 +334,32 @@ body {
     @apply pl-3 pr-3;
   }
 
+  .recent-sidebar-row {
+    @apply relative flex items-stretch;
+  }
+
   .recent-sidebar-item {
     font-family: var(--font-body);
     font-weight: 400;
-    @apply w-full text-left text-sm py-2 px-3 rounded-md transition-colors;
+    @apply flex-1 min-w-0 text-left text-sm py-2 pl-3 pr-9 rounded-md transition-colors;
+  }
+
+  .recent-sidebar-delete {
+    font-family: var(--font-body);
+    @apply absolute right-1.5 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-md text-base leading-none text-ink-dim opacity-0 transition-opacity;
+  }
+
+  .recent-sidebar-row:hover .recent-sidebar-delete,
+  .recent-sidebar-row:focus-within .recent-sidebar-delete {
+    @apply opacity-100;
+  }
+
+  .recent-sidebar-delete:hover:not(:disabled) {
+    @apply bg-raised text-stamp-orange;
+  }
+
+  .recent-sidebar-delete:disabled {
+    @apply opacity-100 cursor-wait;
   }
 
   .recent-sidebar-item-preview {

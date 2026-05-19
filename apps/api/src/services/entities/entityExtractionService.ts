@@ -1,5 +1,6 @@
 import { openai } from "../../lib/openai.js";
-import { config } from "../../config.js";
+import { chatTokenLimitParam } from "../../lib/openaiChat.js";
+import { getModelSettings } from "../admin/modelSettingsService.js";
 import { prisma } from "../../lib/prisma.js";
 
 const ENTITY_TYPES = new Set([
@@ -39,9 +40,10 @@ function toGraphNodeId(entityId: string): string {
 export async function extractEntitiesFromText(
   text: string,
 ): Promise<ExtractedEntity[]> {
+  const settings = await getModelSettings();
   const completion = await openai.chat.completions.create({
-    model: config.standardModel,
-    max_tokens: 1500,
+    model: settings.standard_model,
+    ...chatTokenLimitParam(settings.standard_model, 1500),
     response_format: { type: "json_object" },
     messages: [
       { role: "system", content: EXTRACTION_PROMPT },

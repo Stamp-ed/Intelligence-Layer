@@ -1,5 +1,6 @@
 import { openai } from "../../lib/openai.js";
-import { config } from "../../config.js";
+import { chatTokenLimitParam } from "../../lib/openaiChat.js";
+import { getModelSettings } from "../admin/modelSettingsService.js";
 
 export async function summarizeDocument(
   title: string,
@@ -7,9 +8,10 @@ export async function summarizeDocument(
 ): Promise<string> {
   const excerpt = content.length > 8000 ? content.slice(0, 8000) + "…" : content;
 
+  const settings = await getModelSettings();
   const completion = await openai.chat.completions.create({
-    model: config.standardModel,
-    max_tokens: 200,
+    model: settings.standard_model,
+    ...chatTokenLimitParam(settings.standard_model, 200),
     messages: [
       {
         role: "system",

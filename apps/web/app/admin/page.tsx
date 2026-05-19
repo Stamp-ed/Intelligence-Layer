@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ModelSettingsPanel } from "@/components/admin/ModelSettingsPanel";
 import { getHealth, getStats, type HealthResponse, type StatsResponse } from "@/lib/api";
 
 function StatusBadge({ ok }: { ok: boolean | string }) {
@@ -51,6 +52,8 @@ export default function AdminPage() {
           {error}
         </p>
       )}
+
+      <ModelSettingsPanel />
 
       {health && (
         <section className="card p-6">

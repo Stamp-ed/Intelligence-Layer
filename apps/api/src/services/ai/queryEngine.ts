@@ -1,5 +1,7 @@
 import { openai } from "../../lib/openai.js";
+import { chatTokenLimitParam } from "../../lib/openaiChat.js";
 import { config } from "../../config.js";
+import { resolveQueryModel } from "../admin/modelSettingsService.js";
 import { AppError } from "../../middleware/errorHandler.js";
 import { prisma } from "../../lib/prisma.js";
 import { channelAwareSearch } from "../retrieval/channelAwareSearch.js";
@@ -62,10 +64,7 @@ export interface QueryResponse {
 export async function retrieveAndAnswer(
   request: QueryRequest,
 ): Promise<QueryResponse> {
-  const model =
-    request.synthesis_level === "strategic"
-      ? config.strategicModel
-      : config.standardModel;
+  const model = await resolveQueryModel(request.synthesis_level);
 
   const conversation = await getOrCreateConversation(request.conversation_id);
   const history = formatHistoryForPrompt(conversation.messages);
@@ -93,7 +92,7 @@ export async function retrieveAndAnswer(
   try {
     completion = await openai.chat.completions.create({
       model,
-      max_tokens: config.maxTokensAnswer,
+      ...chatTokenLimitParam(model, config.maxTokensAnswer),
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         ...history,

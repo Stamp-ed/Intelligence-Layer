@@ -1,5 +1,6 @@
 import { QdrantClient } from "@qdrant/js-client-rest";
 import { config, getQdrantClientOptions } from "../config.js";
+import { resolveEmbeddingDimensions } from "./embeddingConfig.js";
 
 export const qdrant = new QdrantClient(getQdrantClientOptions());
 
@@ -41,8 +42,26 @@ export async function verifyQdrantVectorSize(): Promise<void> {
   if (size != null && size !== config.embeddingDimensions) {
     throw new Error(
       `Qdrant collection "${config.qdrantCollection}" uses vector size ${size}, but ` +
-        `EMBEDDING_MODEL=${config.embeddingModel} expects ${config.embeddingDimensions}. ` +
-        "Recreate the collection or run POST /api/v1/admin/reindex-vectors after aligning EMBEDDING_MODEL.",
+        `the configured embedding model expects ${config.embeddingDimensions} dimensions. ` +
+        "Change the embedding model back, recreate the collection, or run POST /api/v1/admin/reindex-vectors.",
+    );
+  }
+}
+
+export async function verifyQdrantVectorSizeForModel(
+  embeddingModel: string,
+): Promise<void> {
+  const expected = resolveEmbeddingDimensions(embeddingModel);
+  const info = await qdrant.getCollection(config.qdrantCollection);
+  const size = readCollectionVectorSize(
+    info.config?.params?.vectors as
+      | { size: number }
+      | Record<string, { size: number }>
+      | undefined,
+  );
+  if (size != null && size !== expected) {
+    throw new Error(
+      `Cannot switch to ${embeddingModel} (${expected} dims): Qdrant collection has ${size} dims. Reindex required.`,
     );
   }
 }

@@ -433,6 +433,47 @@ export async function getStats(): Promise<StatsResponse> {
   return request<StatsResponse>("/api/v1/admin/stats");
 }
 
+export interface OpenAiModelOption {
+  id: string;
+  label: string;
+  description: string;
+  category: "general" | "reasoning" | "embedding";
+}
+
+export interface ModelSettings {
+  standard_model: string;
+  strategic_model: string;
+  embedding_model: string;
+  embedding_dimensions: number;
+  updated_at: string;
+  env_defaults: {
+    standard_model: string;
+    strategic_model: string;
+    embedding_model: string;
+  };
+}
+
+export interface ModelSettingsResponse {
+  chat_models: OpenAiModelOption[];
+  embedding_models: OpenAiModelOption[];
+  settings: ModelSettings;
+}
+
+export async function getModelSettings(): Promise<ModelSettingsResponse> {
+  return request<ModelSettingsResponse>("/api/v1/admin/model-settings");
+}
+
+export async function updateModelSettings(input: {
+  standard_model?: string;
+  strategic_model?: string;
+  embedding_model?: string;
+}): Promise<{ settings: ModelSettings }> {
+  return request<{ settings: ModelSettings }>("/api/v1/admin/model-settings", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
 type GraphStatusResponse =
   | GraphStatus
   | { project?: GraphStatus; corpus: GraphStatus };
