@@ -21,13 +21,20 @@ async function main(): Promise<void> {
     startPollScheduler(client);
   });
 
-  const server = createServer((_req, res) => {
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ status: "ok", user: client.user?.tag ?? null }));
-  });
-  server.listen(config.port, () => {
-    console.log(`[discord-bot] Health on :${config.port}`);
-  });
+  const httpEnabled =
+    (process.env.DISCORD_BOT_HTTP_ENABLED ?? "true").toLowerCase() !== "false";
+
+  if (httpEnabled) {
+    const server = createServer((_req, res) => {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ status: "ok", user: client.user?.tag ?? null }));
+    });
+    server.listen(config.port, () => {
+      console.log(`[discord-bot] Health on :${config.port}`);
+    });
+  } else {
+    console.log("[discord-bot] HTTP health disabled (API owns public PORT)");
+  }
 
   await client.login(config.discordBotToken);
 }

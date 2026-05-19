@@ -13,3 +13,19 @@ export function isAllowedCorsOrigin(origin: string | undefined): boolean {
   }
   return VERCEL_ORIGIN.test(origin);
 }
+
+/** For cors middleware: reflect allowed origin string (required with credentials). */
+export function resolveCorsOrigin(
+  origin: string | undefined,
+  callback: (err: Error | null, allow?: boolean | string) => void,
+): void {
+  if (!origin) {
+    callback(null, true);
+    return;
+  }
+  if (isAllowedCorsOrigin(origin)) {
+    callback(null, origin);
+    return;
+  }
+  callback(null, false);
+}

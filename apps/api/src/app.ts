@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { config } from "./config.js";
-import { isAllowedCorsOrigin } from "./lib/cors.js";
+import { resolveCorsOrigin } from "./lib/cors.js";
 import { requireApiKey } from "./middleware/apiAuth.js";
 import { AppError, errorHandler } from "./middleware/errorHandler.js";
 import { ingestRouter } from "./routes/ingest.js";
@@ -16,17 +16,17 @@ import { conversationsRouter } from "./routes/conversations.js";
 export function createApp(): express.Application {
   const app = express();
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    }),
+  );
   app.use(
     cors({
-      origin(origin, callback) {
-        if (isAllowedCorsOrigin(origin)) {
-          callback(null, true);
-          return;
-        }
-        callback(null, false);
-      },
+      origin: resolveCorsOrigin,
       credentials: true,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "X-Api-Key"],
     }),
   );
   app.use(express.json({ limit: "10mb" }));

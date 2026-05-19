@@ -1,0 +1,24 @@
+# Render blueprint — Web Service (API + Discord bot)
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: intelligence-layer-api
+    runtime: node
+    plan: free
+    buildCommand: >-
+      corepack enable && corepack prepare pnpm@9.15.0 --activate &&
+      pnpm install --frozen-lockfile &&
+      pnpm db:generate &&
+      pnpm build &&
+      pnpm db:migrate:deploy
+    startCommand: pnpm start:render
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DISCORD_BOT_HTTP_ENABLED
+        value: "false"
+      # Bot calls API on the same instance (start-render.mjs sets INTELLIGENCE_API_URL if unset)
+      # Set in Render dashboard: DATABASE_URL, OPENAI_API_KEY, API_SECRET_KEY,
+      # QDRANT_URL, QDRANT_API_KEY, DISCORD_BOT_TOKEN, DISCORD_CLIENT_ID, etc.
+      # ALLOWED_ORIGINS should include your Vercel URL(s).

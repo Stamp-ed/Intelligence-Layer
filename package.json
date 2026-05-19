@@ -8,6 +8,7 @@
     "dev:bot": "pnpm --filter @stamped/discord-bot dev",
     "discord:register": "pnpm --filter @stamped/discord-bot register-commands",
     "build": "pnpm -r run build",
+    "start:render": "node scripts/start-render.mjs",
     "db:generate": "pnpm --filter @stamped/database generate",
     "db:migrate": "pnpm --filter @stamped/database migrate:dev",
     "db:migrate:deploy": "pnpm --filter @stamped/database migrate:deploy",

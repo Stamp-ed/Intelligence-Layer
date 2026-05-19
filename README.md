@@ -153,7 +153,23 @@ The app is split into services — do not run Qdrant or the API on Vercel.
 | `apps/api` | Railway, Render, Fly.io, or a VPS (Node container) |
 | Postgres | Supabase |
 | Qdrant | [Qdrant Cloud](https://cloud.qdrant.io) (`QDRANT_URL` + `QDRANT_API_KEY`) or local Docker profile |
-| `apps/discord-bot` | Same PaaS as the API (always-on worker) |
+| `apps/discord-bot` | Same Render service as the API (`pnpm start:render`) |
+
+### Render (API + bot)
+
+**Start command must be** `pnpm start:render` (not `pnpm --filter @stamped/discord-bot start` alone).
+
+If only the Discord bot is running, every URL returns `{"status":"ok","user":"…"}` and the Vercel app cannot load documents or the graph.
+
+**Build command:**
+
+```bash
+corepack enable && corepack prepare pnpm@9.15.0 --activate && pnpm install --frozen-lockfile && pnpm db:generate && pnpm build && pnpm db:migrate:deploy
+```
+
+**Health check path:** `/health` (should return `{"status":"ok"}` from the API, not a `user` field).
+
+Set `ALLOWED_ORIGINS` to include your Vercel URL, e.g. `https://intelligence-layer-seven.vercel.app`.
 
 ---
 
@@ -234,6 +250,8 @@ Confirm `[discord-bot] Logged in as …` before using slash commands. In a chann
 | `401` / Qdrant connection errors | Regenerate API key; URL must include `https://` (set automatically if omitted) |
 | Search returns nothing after switching to Cloud | Re-index vectors (see below) — vectors live in Qdrant, not Postgres |
 | Ingestion jobs: **Invalid or missing API key** | Set `NEXT_PUBLIC_API_SECRET_KEY` in `.env.local` to the **same** value as `API_SECRET_KEY`, then restart `pnpm dev` |
+| Vercel shows 0 documents / fetch fails | Render may be running the **bot only** — curl `https://your-api.onrender.com/health`; if you see `"user":"…"`, change Start Command to `pnpm start:render` and redeploy |
+| Browser CORS error on Vercel | Add your Vercel URL to `ALLOWED_ORIGINS` on Render and redeploy the API |
 | Local Qdrant only | `docker compose --profile local-qdrant up qdrant -d` and use `QDRANT_HOST`/`QDRANT_PORT` instead of `QDRANT_URL` |
 
 ### Re-index vectors into Qdrant (after Cloud migration)
