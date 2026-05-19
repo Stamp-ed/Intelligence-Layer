@@ -8,12 +8,12 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ground: "#EFEEE7",
-        content: "#F7F6F0",
-        card: "#EFEEE7",
-        raised: "#E6E5DC",
-        "high-raised": "#DDDCD3",
-        float: "#F7F6F0",
+        ground: "var(--ground)",
+        content: "var(--content)",
+        card: "var(--card)",
+        raised: "var(--raised)",
+        "high-raised": "var(--high-raised)",
+        float: "var(--float)",
         ink: "#2B2C30",
         "ink-secondary": "rgba(43, 44, 48, 0.65)",
         "ink-dim": "rgba(43, 44, 48, 0.38)",

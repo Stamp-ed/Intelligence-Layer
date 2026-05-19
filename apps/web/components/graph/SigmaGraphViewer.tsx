@@ -229,7 +229,7 @@ export function SigmaGraphViewer({
         className="w-full h-full"
         style={{
           background:
-            "radial-gradient(ellipse at 50% 45%, #F7F6F0 0%, #EEEDE7 55%, #E6E5DC 100%)",
+            "radial-gradient(ellipse at 50% 45%, var(--content) 0%, var(--raised) 55%, var(--high-raised) 100%)",
         }}
       />
       <p className="absolute bottom-2 right-3 text-[10px] text-ink-dim pointer-events-none bg-white/60 px-2 py-0.5 rounded">

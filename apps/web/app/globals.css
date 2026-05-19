@@ -15,8 +15,14 @@
 }
 
 :root {
-  --ground: #efeee7;
-  --content: #f7f6f0;
+  /* Surface palette — tweak here to iterate on background feel */
+  --ground: #f8f8f7;
+  --content: #ffffff;
+  --card: #ffffff;
+  --raised: #f3f3f2;
+  --high-raised: #ebebea;
+  --float: #ffffff;
+  --surface-border: rgba(43, 44, 48, 0.1);
   --ink: #2b2c30;
   --stamp-orange: #f75440;
   --font-futura: "Futura PT", Futura, "Century Gothic", sans-serif;
@@ -112,7 +118,7 @@ body {
 
   .card {
     @apply bg-card rounded border shadow-card;
-    border-color: rgba(43, 44, 48, 0.1);
+    border-color: var(--surface-border);
   }
 
   /* Eyebrow labels: Ingest, Documents, Recent, Filters, etc. */
@@ -321,7 +327,8 @@ body {
   }
 
   .recent-sidebar-item:not(.is-active):hover {
-    @apply bg-raised/70 text-ink;
+    background-color: color-mix(in srgb, var(--raised) 65%, var(--ground));
+    @apply text-ink;
   }
 
   /* User-sent messages in query thread */

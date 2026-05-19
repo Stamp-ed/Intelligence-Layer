@@ -21,8 +21,7 @@ export function QueryResponse({ response }: QueryResponseProps) {
     <>
       <section className="space-y-6">
         <div
-          className="card p-6 border-l-[3px] border-l-stamp-orange"
-          style={{ background: "#F7F6F0" }}
+          className="card p-6 border-l-[3px] border-l-stamp-orange bg-content"
         >
           <header className="flex items-center justify-between gap-2 mb-3">
             <p className="section-label mb-0">Answer</p>
