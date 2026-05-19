@@ -12,6 +12,7 @@ const DEFAULT_ALLOWED_ORIGINS = [
   "http://localhost:3000",
   "http://localhost:3001",
   "https://intelligence-layer.vercel.app",
+  "https://intelligence-layer-seven.vercel.app",
 ];
 
 function parseAllowedOrigins(): string[] {

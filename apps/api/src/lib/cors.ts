@@ -1,8 +1,8 @@
 import { config } from "../config.js";
 
-/** Vercel production + preview deployments for project "intelligence-layer" */
+/** Vercel production aliases + preview deployments for project "intelligence-layer" */
 const VERCEL_ORIGIN =
-  /^https:\/\/intelligence-layer(-[a-z0-9-]+)?\.vercel\.app$/i;
+  /^https:\/\/intelligence-layer[\w-]*\.vercel\.app$/i;
 
 export function isAllowedCorsOrigin(origin: string | undefined): boolean {
   if (!origin) {

@@ -31,29 +31,27 @@ export function Navigation() {
           />
           <span className="hidden sm:inline truncate">Stamped Intelligence</span>
         </Link>
-        <div className="flex flex-wrap items-center gap-3 sm:gap-4 justify-end">
+        <nav className="flex flex-wrap items-center gap-4 sm:gap-6 justify-end">
+          {links.map((link) => {
+            const active =
+              pathname === link.href ||
+              (link.href !== "/" && pathname.startsWith(`${link.href}/`));
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`nav-link pb-1 border-b-2 transition-colors ${
+                  active
+                    ? "text-stamp-orange border-stamp-orange"
+                    : "text-ink-secondary border-transparent hover:text-stamp-orange"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
           <ThemeToggle />
-          <nav className="flex flex-wrap gap-4 sm:gap-6 justify-end">
-            {links.map((link) => {
-              const active =
-                pathname === link.href ||
-                (link.href !== "/" && pathname.startsWith(`${link.href}/`));
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`nav-link pb-1 border-b-2 transition-colors ${
-                    active
-                      ? "text-stamp-orange border-stamp-orange"
-                      : "text-ink-secondary border-transparent hover:text-stamp-orange"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+        </nav>
       </div>
     </header>
   );

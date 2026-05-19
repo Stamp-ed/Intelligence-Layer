@@ -403,16 +403,15 @@ body {
     font-family: var(--font-futura);
     font-weight: 550;
     letter-spacing: -0.01em;
-    @apply inline-flex items-center gap-2 min-h-[36px] px-3 py-1.5 text-sm rounded-lg border bg-card text-ink-secondary transition-colors;
-    border-color: var(--surface-border);
+    @apply inline-flex items-center gap-1.5 text-[15px] pb-1 border-b-2 border-transparent text-ink-secondary transition-colors shrink-0;
   }
 
   .theme-toggle:hover {
-    @apply text-stamp-orange border-stamp-orange/40;
+    @apply text-stamp-orange;
   }
 
   .theme-toggle-icon {
-    @apply text-base leading-none;
+    @apply text-[15px] leading-none;
   }
 
   [data-theme="dark"] .brand-logo {
