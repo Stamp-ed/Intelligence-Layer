@@ -17,6 +17,25 @@ function authHeaders(): Record<string, string> {
   return headers;
 }
 
+function isConnectionRefused(err: unknown): boolean {
+  if (!(err instanceof TypeError) || err.message !== "fetch failed") {
+    return false;
+  }
+  const cause = (err as TypeError & { cause?: unknown }).cause;
+  if (cause && typeof cause === "object" && "code" in cause) {
+    return (cause as { code?: string }).code === "ECONNREFUSED";
+  }
+  return false;
+}
+
+function connectionHint(): string {
+  return (
+    `Cannot reach Intelligence API at ${config.intelligenceApiUrl}. ` +
+    "On Render: use Start Command `pnpm start:render`, unset INTELLIGENCE_API_URL (or set http://127.0.0.1:$PORT), " +
+    "and confirm /health returns {\"status\":\"ok\"} without a \"user\" field."
+  );
+}
+
 async function parseResponse(res: Response): Promise<IngestApiResult> {
   const body = (await res.json()) as IngestApiResult & {
     error?: string;
@@ -28,6 +47,42 @@ async function parseResponse(res: Response): Promise<IngestApiResult> {
   return body;
 }
 
+/** Verify the API is listening before a long backfill run. */
+export async function assertApiReachable(): Promise<void> {
+  const url = `${config.intelligenceApiUrl}/health`;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) {
+      throw new Error(`Health check failed: HTTP ${res.status} from ${url}`);
+    }
+    const body = (await res.json()) as { status?: string; user?: string };
+    if (body.user) {
+      throw new Error(
+        `${url} returned Discord bot health (user field) — API is not on this port. ${connectionHint()}`,
+      );
+    }
+    if (body.status !== "ok") {
+      throw new Error(`Unexpected health response from ${url}`);
+    }
+  } catch (err) {
+    if (isConnectionRefused(err)) {
+      throw new Error(connectionHint(), { cause: err });
+    }
+    throw err;
+  }
+}
+
+async function ingestWithRetry<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await withBackoff(fn, 5, 1500);
+  } catch (err) {
+    if (isConnectionRefused(err)) {
+      throw new Error(connectionHint(), { cause: err });
+    }
+    throw err;
+  }
+}
+
 export async function ingestText(payload: {
   content: string;
   title?: string;
@@ -37,7 +92,7 @@ export async function ingestText(payload: {
   url?: string;
   metadata?: Record<string, unknown>;
 }): Promise<IngestApiResult> {
-  return withBackoff(async () => {
+  return ingestWithRetry(async () => {
     const res = await fetch(`${config.intelligenceApiUrl}/api/v1/ingest/text`, {
       method: "POST",
       headers: {
@@ -68,7 +123,7 @@ export async function ingestFile(payload: {
   url?: string;
   metadata?: Record<string, unknown>;
 }): Promise<IngestApiResult> {
-  return withBackoff(async () => {
+  return ingestWithRetry(async () => {
     const form = new FormData();
     form.append("file", new Blob([new Uint8Array(payload.buffer)]), payload.fileName);
     form.append("source_id", payload.sourceId);

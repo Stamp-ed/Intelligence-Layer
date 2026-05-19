@@ -54,7 +54,11 @@ console.log(`[start-render] API starting on port ${apiPort}; bot will use ${apiL
 
 await waitForApiHealth();
 
+// Drop dashboard INTELLIGENCE_API_URL (often localhost:8000) so the bot always uses loopback:$PORT
+const { INTELLIGENCE_API_URL: _dropApiUrl, ...parentEnv } = process.env;
+
 const bot = run("discord-bot", path.join(root, "apps/discord-bot/dist/index.js"), {
+  ...parentEnv,
   DISCORD_BOT_HTTP_ENABLED: "false",
   INTELLIGENCE_API_URL: apiLocalUrl,
 });

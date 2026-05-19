@@ -9,6 +9,7 @@ import {
 } from "./channelSyncService.js";
 import { collectMessageAttachments } from "../utils/attachmentUtils.js";
 import { sleep } from "../utils/rateLimit.js";
+import { assertApiReachable } from "./intelligenceClient.js";
 
 export type BackfillMode = "all" | "files" | "since";
 
@@ -125,6 +126,8 @@ export async function runChannelBackfill(
   channel: TextBasedChannel,
   options: BackfillOptions,
 ): Promise<BackfillResult> {
+  await assertApiReachable();
+
   const stats: BackfillResult = {
     ingested: 0,
     duplicates: 0,

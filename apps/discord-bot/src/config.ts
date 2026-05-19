@@ -14,22 +14,43 @@ function required(name: string): string {
   return value;
 }
 
-/** Same host the API listens on when bot + API run via scripts/start-render.mjs on Render */
+function isLoopbackHost(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+/**
+ * Bot → API base URL.
+ * On Render (co-located via start-render.mjs), always use 127.0.0.1:$PORT — dashboard
+ * values like http://localhost:8000 cause ECONNREFUSED when PORT is not 8000.
+ * For a separate bot service, set INTELLIGENCE_API_URL to the public API URL (https://…).
+ */
 function resolveIntelligenceApiUrl(): string {
+  const port = process.env.PORT ?? process.env.API_PORT ?? "8000";
   const fromEnv = process.env.INTELLIGENCE_API_URL?.trim();
+
   if (fromEnv) {
-    return fromEnv.replace(/\/$/, "");
+    try {
+      const parsed = new URL(fromEnv);
+      if (process.env.RENDER && isLoopbackHost(parsed.hostname)) {
+        const fixed = `http://127.0.0.1:${port}`;
+        if (fromEnv.replace(/\/$/, "") !== fixed) {
+          console.warn(
+            `[discord-bot] INTELLIGENCE_API_URL=${fromEnv} ignored on Render; using ${fixed}`,
+          );
+        }
+        return fixed;
+      }
+      return fromEnv.replace(/\/$/, "");
+    } catch {
+      console.warn(`[discord-bot] Invalid INTELLIGENCE_API_URL "${fromEnv}", using 127.0.0.1:${port}`);
+    }
   }
 
-  const port = process.env.PORT ?? process.env.API_PORT ?? "8000";
-  const onRender = Boolean(process.env.RENDER);
-  const isProduction = process.env.NODE_ENV === "production";
-
-  if (onRender || isProduction) {
+  if (process.env.RENDER || process.env.NODE_ENV === "production") {
     return `http://127.0.0.1:${port}`;
   }
 
-  return `http://localhost:${port === "8000" ? "8000" : port}`;
+  return `http://localhost:8000`;
 }
 
 export const config = {

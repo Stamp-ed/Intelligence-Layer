@@ -22,7 +22,7 @@ services:
         value: production
       - key: DISCORD_BOT_HTTP_ENABLED
         value: "false"
-      # Bot calls API on the same instance (start-render.mjs sets INTELLIGENCE_API_URL if unset)
+      # Do NOT set INTELLIGENCE_API_URL to localhost:8000 — use start-render (sets 127.0.0.1:$PORT)
       # Set in Render dashboard: DATABASE_URL, OPENAI_API_KEY, API_SECRET_KEY,
       # QDRANT_URL, QDRANT_API_KEY, DISCORD_BOT_TOKEN, DISCORD_CLIENT_ID, etc.
       # ALLOWED_ORIGINS should include your Vercel URL(s).
