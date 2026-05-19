@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Graph from "graphology";
 import Sigma from "sigma";
 import type { SigmaGraphNode, SigmaGraphPayload } from "@/lib/api";
+import { getGraphThemeColors } from "@/lib/theme";
 
 interface SigmaGraphViewerProps {
   data: SigmaGraphPayload;
@@ -42,6 +43,14 @@ export function SigmaGraphViewer({
   const onFocusRef = useRef(onNodeFocus);
   onFocusRef.current = onNodeFocus;
   const nodeMapRef = useRef(new Map<string, SigmaGraphNode>());
+  const [themeKey, setThemeKey] = useState(0);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const observer = new MutationObserver(() => setThemeKey((k) => k + 1));
+    observer.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     nodeMapRef.current = new Map(data.nodes.map((n) => [n.id, n]));
@@ -51,6 +60,7 @@ export function SigmaGraphViewer({
     const el = containerRef.current;
     if (!el || data.nodes.length === 0) return;
 
+    const graphTheme = getGraphThemeColors();
     const graph = new Graph({ multi: false, type: "undirected" });
 
     for (const node of data.nodes) {
@@ -87,7 +97,7 @@ export function SigmaGraphViewer({
             size: isChannelEdge ? 0.35 : 0.2,
             color: isChannelEdge
               ? "rgba(247, 84, 64, 0.12)"
-              : "rgba(43, 44, 48, 0.07)",
+              : graphTheme.edge,
             relation: edge.label,
           });
         } catch {
@@ -113,11 +123,11 @@ export function SigmaGraphViewer({
       labelDensity: 0.55,
       hideLabelsOnMove: false,
       defaultNodeColor: "#94A3B8",
-      defaultEdgeColor: "rgba(43,44,48,0.06)",
+      defaultEdgeColor: graphTheme.edgeDim,
       labelFont: "Helvetica Neue, Arial, sans-serif",
       labelWeight: "600",
       labelSize: 10,
-      labelColor: { color: "#2B2C30" },
+      labelColor: { color: graphTheme.label },
       zIndex: true,
       minEdgeThickness: 0.35,
       zoomingRatio: 1.15,
@@ -149,7 +159,7 @@ export function SigmaGraphViewer({
           borderColor: isChannel
             ? "rgba(255,255,255,0.9)"
             : isActive
-              ? "#2B2C30"
+              ? graphTheme.label
               : undefined,
           borderSize: isChannel ? 0.25 : isActive ? 0.15 : 0,
           zIndex: isActive ? 10 : isNeighbor ? 5 : isChannel ? 3 : isEntity ? 1 : 2,
@@ -166,7 +176,7 @@ export function SigmaGraphViewer({
             neighborSet(graph, active).has(ends[1]));
         return {
           ...attrs,
-          color: lit ? "rgba(247, 84, 64, 0.35)" : "rgba(43, 44, 48, 0.04)",
+          color: lit ? graphTheme.edgeActive : graphTheme.edgeDim,
           size: lit ? 0.6 : 0.15,
         };
       },
@@ -209,7 +219,7 @@ export function SigmaGraphViewer({
       renderer.kill();
       interactionRef.current = { hovered: null, selected: null };
     };
-  }, [data]);
+  }, [data, themeKey]);
 
   if (data.nodes.length === 0) {
     return (
@@ -232,7 +242,7 @@ export function SigmaGraphViewer({
             "radial-gradient(ellipse at 50% 45%, var(--content) 0%, var(--raised) 55%, var(--high-raised) 100%)",
         }}
       />
-      <p className="absolute bottom-2 right-3 text-[10px] text-ink-dim pointer-events-none bg-white/60 px-2 py-0.5 rounded">
+      <p className="absolute bottom-2 right-3 text-[10px] text-ink-dim pointer-events-none bg-card/80 border border-[color:var(--surface-border)] px-2 py-0.5 rounded">
         Scroll to zoom · drag to pan · click to pin
       </p>
     </div>

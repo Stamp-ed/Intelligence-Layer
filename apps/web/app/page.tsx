@@ -49,7 +49,7 @@ export default function HomePage() {
             alt=""
             width={56}
             height={56}
-            className="h-14 w-14 object-contain mb-6"
+            className="brand-logo h-14 w-14 object-contain mb-6"
             priority
           />
           <p className="section-label mb-3">Stamped Intelligence</p>

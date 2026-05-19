@@ -14,7 +14,8 @@
   font-display: swap;
 }
 
-:root {
+:root,
+[data-theme="light"] {
   /* Surface palette — tweak here to iterate on background feel */
   --ground: #f8f8f7;
   --content: #ffffff;
@@ -24,10 +25,36 @@
   --float: #ffffff;
   --surface-border: rgba(43, 44, 48, 0.1);
   --ink: #2b2c30;
+  --ink-secondary: rgba(43, 44, 48, 0.65);
+  --ink-dim: rgba(43, 44, 48, 0.38);
+  --graph-edge: rgba(43, 44, 48, 0.07);
+  --graph-edge-dim: rgba(43, 44, 48, 0.04);
+  --graph-edge-active: rgba(247, 84, 64, 0.35);
+  --graph-label: #2b2c30;
+  --overlay-hint: rgba(255, 255, 255, 0.72);
   --stamp-orange: #f75440;
   --font-futura: "Futura PT", Futura, "Century Gothic", sans-serif;
-  /* Body copy only — headings use --font-futura */
   --font-body: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --ground: #121212;
+  --content: #1a1a1a;
+  --card: #1e1e1e;
+  --raised: #262626;
+  --high-raised: #2f2f2f;
+  --float: #1a1a1a;
+  --surface-border: rgba(255, 255, 255, 0.1);
+  --ink: #eceae6;
+  --ink-secondary: rgba(236, 234, 230, 0.68);
+  --ink-dim: rgba(236, 234, 230, 0.42);
+  --graph-edge: rgba(255, 255, 255, 0.08);
+  --graph-edge-dim: rgba(255, 255, 255, 0.04);
+  --graph-edge-active: rgba(247, 84, 64, 0.4);
+  --graph-label: #eceae6;
+  --overlay-hint: rgba(30, 30, 30, 0.85);
+  color-scheme: dark;
 }
 
 body {
@@ -94,7 +121,7 @@ body {
   .input-field,
   .input {
     font-family: var(--font-body);
-    border-color: rgba(43, 44, 48, 0.12);
+    border-color: var(--surface-border);
   }
 
   .input-field {
@@ -248,7 +275,7 @@ body {
   .filter-control {
     font-family: var(--font-body);
     @apply w-full px-2.5 py-1.5 text-xs rounded border bg-ground text-ink;
-    border-color: rgba(43, 44, 48, 0.12);
+    border-color: var(--surface-border);
   }
 
   .filter-control:focus {
@@ -262,7 +289,7 @@ body {
     font-weight: 550;
     @apply w-full px-2.5 py-1.5 text-xs rounded border bg-ground text-ink;
     letter-spacing: -0.01em;
-    border-color: rgba(43, 44, 48, 0.12);
+    border-color: var(--surface-border);
   }
 
   .form-select:focus {
@@ -287,7 +314,7 @@ body {
 
   .toolbar-chip {
     @apply inline-flex items-center gap-3 min-h-[42px] px-4 py-2 rounded-lg border bg-card cursor-pointer;
-    border-color: rgba(43, 44, 48, 0.1);
+    border-color: var(--surface-border);
   }
 
   .toolbar-chip input[type="checkbox"] {
@@ -343,7 +370,7 @@ body {
 
   .query-input-shell {
     @apply relative w-full rounded-2xl border bg-card shadow-card overflow-hidden transition-shadow;
-    border-color: rgba(43, 44, 48, 0.14);
+    border-color: var(--surface-border);
   }
 
   .query-input-shell:focus-within {
@@ -360,7 +387,7 @@ body {
     font-weight: 550;
     letter-spacing: -0.01em;
     @apply text-xs px-3 py-1.5 rounded-lg border bg-ground text-ink-secondary transition-colors;
-    border-color: rgba(43, 44, 48, 0.14);
+    border-color: var(--surface-border);
   }
 
   .answer-action-btn:hover {
@@ -369,7 +396,27 @@ body {
 
   .home-hero {
     @apply relative rounded-2xl border px-8 py-14 sm:px-12 sm:py-16 text-center bg-card;
-    border-color: rgba(43, 44, 48, 0.1);
+    border-color: var(--surface-border);
+  }
+
+  .theme-toggle {
+    font-family: var(--font-futura);
+    font-weight: 550;
+    letter-spacing: -0.01em;
+    @apply inline-flex items-center gap-2 min-h-[36px] px-3 py-1.5 text-sm rounded-lg border bg-card text-ink-secondary transition-colors;
+    border-color: var(--surface-border);
+  }
+
+  .theme-toggle:hover {
+    @apply text-stamp-orange border-stamp-orange/40;
+  }
+
+  .theme-toggle-icon {
+    @apply text-base leading-none;
+  }
+
+  [data-theme="dark"] .brand-logo {
+    filter: invert(1) brightness(1.05);
   }
 
   .home-cta-row {
@@ -462,7 +509,7 @@ body {
 
   .markdown-body pre {
     @apply my-4 p-4 rounded overflow-x-auto text-sm bg-raised border;
-    border-color: rgba(43, 44, 48, 0.1);
+    border-color: var(--surface-border);
   }
 
   .markdown-body pre code {
@@ -484,7 +531,7 @@ body {
   .markdown-body th,
   .markdown-body td {
     @apply border px-3 py-2 text-left;
-    border-color: rgba(43, 44, 48, 0.12);
+    border-color: var(--surface-border);
   }
 
   .markdown-body th {
@@ -493,6 +540,6 @@ body {
 
   .markdown-body hr {
     @apply my-8 border-t;
-    border-color: rgba(43, 44, 48, 0.12);
+    border-color: var(--surface-border);
   }
 }
