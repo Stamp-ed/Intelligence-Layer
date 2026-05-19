@@ -2,7 +2,7 @@
   "name": "stamped-intelligence",
   "private": true,
   "scripts": {
-    "dev": "pnpm --parallel --filter @stamped/api --filter @stamped/web --filter @stamped/discord-bot run dev",
+    "dev": "pnpm --filter @stamped/database build && pnpm --parallel --filter @stamped/api --filter @stamped/web --filter @stamped/discord-bot run dev",
     "dev:api": "pnpm --filter @stamped/api dev",
     "dev:web": "pnpm --filter @stamped/web dev",
     "dev:bot": "pnpm --filter @stamped/discord-bot dev",

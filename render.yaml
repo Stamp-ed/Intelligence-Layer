@@ -10,6 +10,7 @@ services:
       npm install -g pnpm@9.15.0 &&
       pnpm install --frozen-lockfile &&
       pnpm db:generate &&
+      pnpm --filter @stamped/database build &&
       pnpm build &&
       pnpm db:migrate:deploy
     startCommand: pnpm start:render

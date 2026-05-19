@@ -164,7 +164,7 @@ If only the Discord bot is running, every URL returns `{"status":"ok","user":"â€
 **Build command:**
 
 ```bash
-npm install -g pnpm@9.15.0 && pnpm install --frozen-lockfile && pnpm db:generate && pnpm build && pnpm db:migrate:deploy
+npm install -g pnpm@9.15.0 && pnpm install --frozen-lockfile && pnpm db:generate && pnpm --filter @stamped/database build && pnpm build && pnpm db:migrate:deploy
 ```
 
 **Health check path:** `/health` (should return `{"status":"ok"}` from the API, not a `user` field).
