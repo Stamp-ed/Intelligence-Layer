@@ -20,6 +20,7 @@ export async function channelAwareSearch(
 
   const { primary_channel: _primary, channels, ...rest } = filters ?? {};
   const primaryLimit = Math.max(8, Math.ceil(limit * PRIMARY_SHARE));
+  const extraChannels = channels?.filter((c) => c !== primary) ?? [];
 
   const primaryResults = await semanticSearch(query, primaryLimit, {
     ...rest,
@@ -34,7 +35,7 @@ export async function channelAwareSearch(
 
   const globalResults = await semanticSearch(query, limit, {
     ...rest,
-    channels: channels?.length ? channels : undefined,
+    channels: extraChannels.length ? extraChannels : undefined,
   });
 
   const others = globalResults

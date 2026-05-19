@@ -13,47 +13,50 @@ export interface SemanticSearchResult {
   sourceType: string;
   channel: string;
   author: string;
+  ingestedAt: string;
+  tags: string[];
 }
 
-function buildFilter(filters?: QueryRequest["filters"]) {
-  if (!filters) return undefined;
+function hasActiveFilters(filters?: QueryRequest["filters"]): boolean {
+  if (!filters) return false;
+  return Boolean(
+    filters.source_types?.length ||
+      filters.channels?.length ||
+      filters.tags?.length ||
+      filters.date_from ||
+      filters.date_to,
+  );
+}
 
-  const must: Array<Record<string, unknown>> = [];
+/** Apply filters in-process (Qdrant Cloud often rejects payload filters without indexes). */
+export function applyPayloadFilters(
+  results: SemanticSearchResult[],
+  filters?: QueryRequest["filters"],
+): SemanticSearchResult[] {
+  if (!filters || !hasActiveFilters(filters)) return results;
 
-  if (filters.source_types?.length) {
-    must.push({
-      key: "source_type",
-      match: { any: filters.source_types },
-    });
-  }
+  const fromMs = filters.date_from
+    ? new Date(filters.date_from).getTime()
+    : undefined;
+  const toMs = filters.date_to ? new Date(filters.date_to).getTime() : undefined;
+  const sourceTypes = filters.source_types?.length
+    ? new Set(filters.source_types)
+    : undefined;
+  const channels = filters.channels?.length ? new Set(filters.channels) : undefined;
+  const tags = filters.tags?.length ? new Set(filters.tags) : undefined;
 
-  if (filters.channels?.length) {
-    must.push({
-      key: "channel",
-      match: { any: filters.channels },
-    });
-  }
-
-  if (filters.tags?.length) {
-    must.push({
-      key: "tags",
-      match: { any: filters.tags },
-    });
-  }
-
-  if (filters.date_from || filters.date_to) {
-    const range: Record<string, string> = {};
-    if (filters.date_from) {
-      range.gte = new Date(filters.date_from).toISOString();
+  return results.filter((row) => {
+    if (sourceTypes && !sourceTypes.has(row.sourceType)) return false;
+    if (channels && !channels.has(row.channel)) return false;
+    if (tags && !row.tags.some((t) => tags.has(t))) return false;
+    if (fromMs != null || toMs != null) {
+      const ingestedMs = Date.parse(row.ingestedAt);
+      if (Number.isNaN(ingestedMs)) return false;
+      if (fromMs != null && ingestedMs < fromMs) return false;
+      if (toMs != null && ingestedMs > toMs) return false;
     }
-    if (filters.date_to) {
-      range.lte = new Date(filters.date_to).toISOString();
-    }
-    must.push({ key: "ingested_at", range });
-  }
-
-  if (must.length === 0) return undefined;
-  return { must };
+    return true;
+  });
 }
 
 export async function semanticSearch(
@@ -73,15 +76,15 @@ export async function semanticSearch(
     );
   }
 
-  const filter = buildFilter(filters);
+  const filtered = hasActiveFilters(filters);
+  const searchLimit = filtered ? Math.min(Math.max(limit * 4, 40), 120) : limit;
 
-  let results;
+  let rawResults;
   try {
-    results = await qdrant.search(config.qdrantCollection, {
+    rawResults = await qdrant.search(config.qdrantCollection, {
       vector,
-      limit,
+      limit: searchLimit,
       with_payload: true,
-      ...(filter ? { filter } : {}),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -92,8 +95,15 @@ export async function semanticSearch(
     );
   }
 
-  return results.map((r) => {
+  const mapped: SemanticSearchResult[] = rawResults.map((r) => {
     const payload = r.payload ?? {};
+    const rawTags = payload.tags;
+    const tags = Array.isArray(rawTags)
+      ? rawTags.map(String)
+      : typeof rawTags === "string"
+        ? [rawTags]
+        : [];
+
     return {
       chunkId: String(payload.chunk_id ?? r.id),
       documentId: String(payload.document_id ?? ""),
@@ -103,6 +113,10 @@ export async function semanticSearch(
       sourceType: String(payload.source_type ?? ""),
       channel: String(payload.channel ?? ""),
       author: String(payload.author ?? ""),
+      ingestedAt: String(payload.ingested_at ?? ""),
+      tags,
     };
   });
+
+  return applyPayloadFilters(mapped, filters).slice(0, limit);
 }
