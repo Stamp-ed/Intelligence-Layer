@@ -8,6 +8,13 @@ import { startPollScheduler } from "./jobs/pollEnabledChannels.js";
 import { prisma } from "./lib/prisma.js";
 
 async function main(): Promise<void> {
+  console.log(`[discord-bot] Intelligence API: ${config.intelligenceApiUrl}`);
+  if (!config.apiSecretKey) {
+    console.warn(
+      "[discord-bot] API_SECRET_KEY is not set — ingest routes will return 401",
+    );
+  }
+
   const client = createDiscordClient();
 
   registerInteractionHandler(client);

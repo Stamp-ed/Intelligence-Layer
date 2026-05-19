@@ -14,6 +14,24 @@ function required(name: string): string {
   return value;
 }
 
+/** Same host the API listens on when bot + API run via scripts/start-render.mjs on Render */
+function resolveIntelligenceApiUrl(): string {
+  const fromEnv = process.env.INTELLIGENCE_API_URL?.trim();
+  if (fromEnv) {
+    return fromEnv.replace(/\/$/, "");
+  }
+
+  const port = process.env.PORT ?? process.env.API_PORT ?? "8000";
+  const onRender = Boolean(process.env.RENDER);
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (onRender || isProduction) {
+    return `http://127.0.0.1:${port}`;
+  }
+
+  return `http://localhost:${port === "8000" ? "8000" : port}`;
+}
+
 export const config = {
   discordBotToken: required("DISCORD_BOT_TOKEN"),
   discordClientId: required("DISCORD_CLIENT_ID"),
@@ -23,10 +41,7 @@ export const config = {
     .map((r) => r.trim())
     .filter(Boolean),
 
-  intelligenceApiUrl: (process.env.INTELLIGENCE_API_URL ?? "http://localhost:8000").replace(
-    /\/$/,
-    "",
-  ),
+  intelligenceApiUrl: resolveIntelligenceApiUrl(),
   apiSecretKey: process.env.API_SECRET_KEY ?? "",
 
   pollIntervalHours: parseInt(process.env.DISCORD_POLL_INTERVAL_HOURS ?? "6", 10),

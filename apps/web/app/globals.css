@@ -172,6 +172,31 @@ body {
     letter-spacing: -0.01em;
   }
 
+  .nav-burger {
+    @apply flex flex-col justify-center items-center gap-1.5 w-10 h-10 rounded-md border border-[color:var(--surface-border)] bg-ground text-ink;
+  }
+
+  .nav-burger-bar {
+    @apply block w-5 h-0.5 rounded-full bg-current transition-transform;
+  }
+
+  .nav-mobile-backdrop {
+    @apply fixed inset-0 z-40 bg-black/40 lg:hidden;
+    top: var(--nav-height, 4.5rem);
+  }
+
+  .nav-mobile-panel {
+    @apply fixed right-0 z-50 flex flex-col gap-1 px-5 py-4 border-l border-b border-[color:var(--surface-border)] bg-ground shadow-lg lg:hidden;
+    top: var(--nav-height, 4.5rem);
+    width: min(18rem, 88vw);
+    max-height: calc(100dvh - var(--nav-height, 4.5rem));
+    overflow-y: auto;
+  }
+
+  .nav-mobile-link {
+    @apply block py-3 text-lg border-b-0;
+  }
+
   /* Toolbar: New conversation, Strategic synthesis, etc. */
   .ui-chrome {
     font-family: var(--font-futura);

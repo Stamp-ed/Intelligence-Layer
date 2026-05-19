@@ -1,5 +1,5 @@
 /**
- * Render production: API on $PORT (public), Discord bot without HTTP (no port conflict).
+ * Render production: API on $PORT (public), Discord bot after API is healthy.
  */
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -25,10 +25,38 @@ function run(name, scriptPath, extraEnv = {}) {
   return child;
 }
 
+async function waitForApiHealth(maxAttempts = 60, intervalMs = 1000) {
+  const url = `${apiLocalUrl}/health`;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+      if (res.ok) {
+        console.log(`[start-render] API ready at ${url}`);
+        return;
+      }
+      console.warn(
+        `[start-render] API health ${res.status} (attempt ${attempt}/${maxAttempts})`,
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn(
+        `[start-render] Waiting for API at ${url} (${attempt}/${maxAttempts}): ${message}`,
+      );
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+  throw new Error(`API did not become healthy at ${apiLocalUrl} within ${maxAttempts}s`);
+}
+
 const api = run("api", path.join(root, "apps/api/dist/index.js"));
+
+console.log(`[start-render] API starting on port ${apiPort}; bot will use ${apiLocalUrl}`);
+
+await waitForApiHealth();
+
 const bot = run("discord-bot", path.join(root, "apps/discord-bot/dist/index.js"), {
   DISCORD_BOT_HTTP_ENABLED: "false",
-  INTELLIGENCE_API_URL: process.env.INTELLIGENCE_API_URL ?? apiLocalUrl,
+  INTELLIGENCE_API_URL: apiLocalUrl,
 });
 
 let shuttingDown = false;
