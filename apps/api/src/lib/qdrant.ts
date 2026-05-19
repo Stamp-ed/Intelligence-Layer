@@ -1,9 +1,18 @@
 import { QdrantClient } from "@qdrant/js-client-rest";
 import { config, getQdrantClientOptions } from "../config.js";
 
-const VECTOR_SIZE = 1536;
-
 export const qdrant = new QdrantClient(getQdrantClientOptions());
+
+function readCollectionVectorSize(
+  vectors: { size: number } | Record<string, { size: number }> | undefined,
+): number | undefined {
+  if (!vectors) return undefined;
+  if ("size" in vectors && typeof vectors.size === "number") {
+    return vectors.size;
+  }
+  const first = Object.values(vectors)[0];
+  return first?.size;
+}
 
 export async function ensureQdrantCollection(): Promise<void> {
   const collections = await qdrant.getCollections();
@@ -13,8 +22,28 @@ export async function ensureQdrantCollection(): Promise<void> {
 
   if (!exists) {
     await qdrant.createCollection(config.qdrantCollection, {
-      vectors: { size: VECTOR_SIZE, distance: "Cosine" },
+      vectors: { size: config.embeddingDimensions, distance: "Cosine" },
     });
+    return;
+  }
+
+  await verifyQdrantVectorSize();
+}
+
+export async function verifyQdrantVectorSize(): Promise<void> {
+  const info = await qdrant.getCollection(config.qdrantCollection);
+  const size = readCollectionVectorSize(
+    info.config?.params?.vectors as
+      | { size: number }
+      | Record<string, { size: number }>
+      | undefined,
+  );
+  if (size != null && size !== config.embeddingDimensions) {
+    throw new Error(
+      `Qdrant collection "${config.qdrantCollection}" uses vector size ${size}, but ` +
+        `EMBEDDING_MODEL=${config.embeddingModel} expects ${config.embeddingDimensions}. ` +
+        "Recreate the collection or run POST /api/v1/admin/reindex-vectors after aligning EMBEDDING_MODEL.",
+    );
   }
 }
 

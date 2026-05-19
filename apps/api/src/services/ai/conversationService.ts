@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../middleware/errorHandler.js";
 
@@ -18,7 +19,7 @@ export async function getOrCreateConversation(conversationId?: string) {
   }
 
   return prisma.conversation.create({
-    data: { sessionId: crypto.randomUUID(), metadata: {} },
+    data: { sessionId: randomUUID(), metadata: {} },
     include: { messages: true },
   });
 }

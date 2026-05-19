@@ -37,10 +37,17 @@ export function errorHandler(
     return;
   }
 
+  const expose =
+    process.env.API_DEBUG_ERRORS === "true" ||
+    process.env.NODE_ENV !== "production";
+  const message =
+    err instanceof Error ? err.message : "An unexpected error occurred";
+
   console.error(err);
+
   res.status(500).json({
     error: "internal_error",
-    message: "An unexpected error occurred",
-    details: {},
+    message: expose ? message : "An unexpected error occurred",
+    details: expose && err instanceof Error ? { name: err.name } : {},
   });
 }

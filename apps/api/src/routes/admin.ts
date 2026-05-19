@@ -1,18 +1,22 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 import { checkOpenAIHealth } from "../lib/openai.js";
-import { checkQdrantHealth } from "../lib/qdrant.js";
+import { checkQdrantHealth, verifyQdrantVectorSize } from "../lib/qdrant.js";
+import { generateEmbedding } from "../services/ingestion/embedder.js";
+import { config } from "../config.js";
+import { qdrant } from "../lib/qdrant.js";
 import { getGraphStatus } from "../services/graph/graphService.js";
 import { reindexAllVectors } from "../services/ingestion/reindexVectors.js";
 
 export const adminRouter = Router();
 
 adminRouter.get("/health", async (_req, res) => {
-  const [postgres, qdrant, openai, graph] = await Promise.all([
+  const [postgres, qdrant, openai, graph, retrieval] = await Promise.all([
     prisma.$queryRaw`SELECT 1`.then(() => true).catch(() => false),
     checkQdrantHealth(),
     checkOpenAIHealth(),
     getGraphStatus().catch(() => null),
+    checkRetrievalPipeline().catch(() => false),
   ]);
 
   const graphCorpus =
@@ -30,10 +34,22 @@ adminRouter.get("/health", async (_req, res) => {
       postgres,
       qdrant,
       openai,
+      retrieval,
       graph_corpus: graphCorpus,
     },
   });
 });
+
+async function checkRetrievalPipeline(): Promise<boolean> {
+  await verifyQdrantVectorSize();
+  const vector = await generateEmbedding("healthcheck");
+  await qdrant.search(config.qdrantCollection, {
+    vector,
+    limit: 1,
+    with_payload: false,
+  });
+  return true;
+}
 
 adminRouter.post("/reindex-vectors", async (_req, res, next) => {
   try {

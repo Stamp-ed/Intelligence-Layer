@@ -1,5 +1,6 @@
 import { config as loadEnv } from "dotenv";
 import { resolve } from "path";
+import { envOrDefault, resolveEmbeddingDimensions } from "./lib/embeddingConfig.js";
 
 const repoRoot = resolve(process.cwd(), "../..");
 
@@ -31,14 +32,17 @@ function required(name: string, fallback?: string): string {
   return value;
 }
 
+const embeddingModel = envOrDefault("EMBEDDING_MODEL", "text-embedding-3-small");
+
 export const config = {
   port: parseInt(process.env.PORT ?? process.env.API_PORT ?? "8000", 10),
   nodeEnv: process.env.NODE_ENV ?? "development",
 
-  openaiApiKey: process.env.OPENAI_API_KEY ?? "",
-  embeddingModel: process.env.EMBEDDING_MODEL ?? "text-embedding-3-small",
-  standardModel: process.env.STANDARD_MODEL ?? "gpt-4o-mini",
-  strategicModel: process.env.STRATEGIC_MODEL ?? "gpt-4o",
+  openaiApiKey: process.env.OPENAI_API_KEY?.trim() ?? "",
+  embeddingModel,
+  embeddingDimensions: resolveEmbeddingDimensions(embeddingModel),
+  standardModel: envOrDefault("STANDARD_MODEL", "gpt-4o-mini"),
+  strategicModel: envOrDefault("STRATEGIC_MODEL", "gpt-4o"),
   maxTokensAnswer: parseInt(process.env.MAX_TOKENS_ANSWER ?? "2048", 10),
 
   databaseUrl: process.env.DATABASE_URL ?? "",

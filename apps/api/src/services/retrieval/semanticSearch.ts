@@ -1,5 +1,6 @@
 import { qdrant } from "../../lib/qdrant.js";
 import { config } from "../../config.js";
+import { AppError } from "../../middleware/errorHandler.js";
 import { generateEmbedding } from "../ingestion/embedder.js";
 import type { QueryRequest } from "../../schemas/query.js";
 
@@ -60,15 +61,36 @@ export async function semanticSearch(
   limit = 20,
   filters?: QueryRequest["filters"],
 ): Promise<SemanticSearchResult[]> {
-  const vector = await generateEmbedding(query);
+  let vector: number[];
+  try {
+    vector = await generateEmbedding(query);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new AppError(
+      502,
+      "embedding_failed",
+      `Failed to generate query embedding: ${message}`,
+    );
+  }
+
   const filter = buildFilter(filters);
 
-  const results = await qdrant.search(config.qdrantCollection, {
-    vector,
-    limit,
-    filter,
-    with_payload: true,
-  });
+  let results;
+  try {
+    results = await qdrant.search(config.qdrantCollection, {
+      vector,
+      limit,
+      with_payload: true,
+      ...(filter ? { filter } : {}),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new AppError(
+      502,
+      "retrieval_failed",
+      `Qdrant search failed: ${message}`,
+    );
+  }
 
   return results.map((r) => {
     const payload = r.payload ?? {};

@@ -7,6 +7,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   const response = await openai.embeddings.create({
     model: config.embeddingModel,
     input: text,
+    dimensions: config.embeddingDimensions,
   });
   return response.data[0].embedding;
 }
@@ -19,6 +20,7 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
     const response = await openai.embeddings.create({
       model: config.embeddingModel,
       input: batch,
+      dimensions: config.embeddingDimensions,
     });
     const sorted = [...response.data].sort((a, b) => a.index - b.index);
     results.push(...sorted.map((d) => d.embedding));

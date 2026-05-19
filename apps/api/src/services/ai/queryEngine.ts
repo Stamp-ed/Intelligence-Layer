@@ -1,5 +1,6 @@
 import { openai } from "../../lib/openai.js";
 import { config } from "../../config.js";
+import { AppError } from "../../middleware/errorHandler.js";
 import { prisma } from "../../lib/prisma.js";
 import { channelAwareSearch } from "../retrieval/channelAwareSearch.js";
 import { assembleContext } from "../retrieval/contextAssembler.js";
@@ -10,6 +11,13 @@ import {
 } from "./conversationService.js";
 import { buildRetrievalQuery } from "./queryRewrite.js";
 import type { QueryRequest } from "../../schemas/query.js";
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isUuid(value: string): boolean {
+  return UUID_RE.test(value);
+}
 
 const SYSTEM_PROMPT = `You are the Stamped Intelligence System — an internal AI assistant with access to Stamped's complete organizational knowledge base.
 
@@ -81,21 +89,30 @@ export async function retrieveAndAnswer(
 
   const userMessage = `Retrieved context:\n\n${context || "(No relevant context found)"}\n\n---\n\nUser question: ${request.query}`;
 
-  const completion = await openai.chat.completions.create({
-    model,
-    max_tokens: config.maxTokensAnswer,
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      ...history,
-      { role: "user", content: userMessage },
-    ],
-  });
+  let completion;
+  try {
+    completion = await openai.chat.completions.create({
+      model,
+      max_tokens: config.maxTokensAnswer,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        ...history,
+        { role: "user", content: userMessage },
+      ],
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new AppError(502, "completion_failed", `OpenAI chat failed: ${message}`);
+  }
 
   const answer =
     completion.choices[0]?.message?.content ??
     "Unable to generate a response.";
 
-  const docIds = [...new Set(topChunks.map((c) => c.documentId))];
+  const docIds = [
+    ...new Set(topChunks.map((c) => c.documentId).filter(isUuid)),
+  ];
+  const chunkIds = topChunks.map((c) => c.chunkId).filter(isUuid);
   const documents = await prisma.document.findMany({
     where: { id: { in: docIds } },
     select: { id: true, url: true, author: true },
@@ -135,7 +152,7 @@ export async function retrieveAndAnswer(
         conversationId: conversation.id,
         role: "assistant",
         content: answer,
-        retrievedChunkIds: topChunks.map((c) => c.chunkId),
+        retrievedChunkIds: chunkIds,
         retrievedDocumentIds: docIds,
         modelUsed: model,
       },
