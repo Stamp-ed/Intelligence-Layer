@@ -5,8 +5,9 @@ services:
     name: intelligence-layer-api
     runtime: node
     plan: free
+    # Do not use `corepack enable` on Render — /usr/bin is read-only (EROFS).
     buildCommand: >-
-      corepack enable && corepack prepare pnpm@9.15.0 --activate &&
+      npm install -g pnpm@9.15.0 &&
       pnpm install --frozen-lockfile &&
       pnpm db:generate &&
       pnpm build &&
@@ -14,6 +15,8 @@ services:
     startCommand: pnpm start:render
     healthCheckPath: /health
     envVars:
+      - key: NODE_VERSION
+        value: "20"
       - key: NODE_ENV
         value: production
       - key: DISCORD_BOT_HTTP_ENABLED

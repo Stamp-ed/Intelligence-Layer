@@ -164,10 +164,12 @@ If only the Discord bot is running, every URL returns `{"status":"ok","user":"â€
 **Build command:**
 
 ```bash
-corepack enable && corepack prepare pnpm@9.15.0 --activate && pnpm install --frozen-lockfile && pnpm db:generate && pnpm build && pnpm db:migrate:deploy
+npm install -g pnpm@9.15.0 && pnpm install --frozen-lockfile && pnpm db:generate && pnpm build && pnpm db:migrate:deploy
 ```
 
 **Health check path:** `/health` (should return `{"status":"ok"}` from the API, not a `user` field).
+
+**Node version:** use **20 LTS** (`.node-version` in repo). Node 26 breaks the Qdrant client (`invalid onError method` / undici).
 
 Set `ALLOWED_ORIGINS` to include your Vercel URL, e.g. `https://intelligence-layer-seven.vercel.app`.
 

@@ -15,7 +15,7 @@
     "db:push": "pnpm --filter @stamped/database push"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20 <23"
   },
   "packageManager": "pnpm@9.15.0"
 }

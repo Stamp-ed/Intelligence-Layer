@@ -104,6 +104,7 @@ export function getQdrantUrl(): string {
 export function getQdrantClientOptions(): {
   url: string;
   apiKey?: string;
+  checkCompatibility: boolean;
 } {
   const apiKey = process.env.QDRANT_API_KEY?.trim() || undefined;
   const url = getQdrantUrl();
@@ -114,5 +115,10 @@ export function getQdrantClientOptions(): {
     );
   }
 
-  return apiKey ? { url, apiKey } : { url };
+  return {
+    url,
+    ...(apiKey ? { apiKey } : {}),
+    // Node 22+ undici can throw "invalid onError method" on the compatibility probe fetch
+    checkCompatibility: process.env.QDRANT_CHECK_COMPATIBILITY === "true",
+  };
 }
