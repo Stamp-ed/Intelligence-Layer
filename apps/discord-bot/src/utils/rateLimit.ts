@@ -4,8 +4,9 @@ export function sleep(ms: number): Promise<void> {
 
 export async function withBackoff<T>(
   fn: () => Promise<T>,
-  attempts = 3,
-  baseMs = 1000,
+  attempts = 5,
+  baseMs = 1500,
+  shouldRetry: (err: unknown) => boolean = () => true,
 ): Promise<T> {
   let lastError: unknown;
   for (let i = 0; i < attempts; i++) {
@@ -13,9 +14,11 @@ export async function withBackoff<T>(
       return await fn();
     } catch (err) {
       lastError = err;
-      if (i < attempts - 1) {
-        await sleep(baseMs * 2 ** i);
+      const hasRetriesLeft = i < attempts - 1;
+      if (!hasRetriesLeft || !shouldRetry(err)) {
+        break;
       }
+      await sleep(baseMs * 2 ** i);
     }
   }
   throw lastError;

@@ -83,6 +83,9 @@ export function JobTracker({ activeJobId }: { activeJobId?: string | null }) {
             <th className="table-header-label px-3 py-2 text-left">
               Created
             </th>
+            <th className="table-header-label px-3 py-2 text-left">
+              Error
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -119,6 +122,9 @@ export function JobTracker({ activeJobId }: { activeJobId?: string | null }) {
                 </td>
                 <td className="px-3 py-2 text-xs text-ink-secondary">
                   {new Date(job.createdAt).toLocaleString()}
+                </td>
+                <td className="px-3 py-2 text-xs text-stamp-orange max-w-xs truncate">
+                  {job.status === "failed" && job.errorLog ? job.errorLog : "—"}
                 </td>
               </tr>
             );

@@ -9,6 +9,19 @@ export interface IngestApiResult {
   replaced?: boolean;
 }
 
+const MAX_INGEST_ATTEMPTS = 5;
+const INGEST_BACKOFF_MS = 1500;
+
+export class IngestHttpError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "IngestHttpError";
+  }
+}
+
 function authHeaders(): Record<string, string> {
   const headers: Record<string, string> = {};
   if (config.apiSecretKey) {
@@ -28,6 +41,17 @@ function isConnectionRefused(err: unknown): boolean {
   return false;
 }
 
+function isRetryableIngestError(err: unknown): boolean {
+  if (isConnectionRefused(err)) return true;
+  if (err instanceof IngestHttpError) {
+    return err.status >= 500 || err.status === 429;
+  }
+  if (err instanceof TypeError && err.message === "fetch failed") {
+    return true;
+  }
+  return false;
+}
+
 function connectionHint(): string {
   return (
     `Cannot reach Intelligence API at ${config.intelligenceApiUrl}. ` +
@@ -42,7 +66,10 @@ async function parseResponse(res: Response): Promise<IngestApiResult> {
     message?: string;
   };
   if (!res.ok) {
-    throw new Error(body.message ?? body.error ?? `Ingest failed: ${res.status}`);
+    throw new IngestHttpError(
+      body.message ?? body.error ?? `Ingest failed: ${res.status}`,
+      res.status,
+    );
   }
   return body;
 }
@@ -74,7 +101,7 @@ export async function assertApiReachable(): Promise<void> {
 
 async function ingestWithRetry<T>(fn: () => Promise<T>): Promise<T> {
   try {
-    return await withBackoff(fn, 5, 1500);
+    return await withBackoff(fn, MAX_INGEST_ATTEMPTS, INGEST_BACKOFF_MS, isRetryableIngestError);
   } catch (err) {
     if (isConnectionRefused(err)) {
       throw new Error(connectionHint(), { cause: err });

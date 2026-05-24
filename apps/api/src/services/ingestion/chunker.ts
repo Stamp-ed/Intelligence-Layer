@@ -95,9 +95,17 @@ export function chunkText(text: string): TextChunk[] {
     withOverlap.push(chunk);
   }
 
-  const filtered = withOverlap
+  let filtered = withOverlap
     .map((t) => t.trim())
     .filter((t) => t.length > 0 && countTokens(t) >= config.minChunkSize);
+
+  // Short sources (e.g. Discord messages) may be below minChunkSize — keep one chunk.
+  if (filtered.length === 0) {
+    const trimmed = text.trim();
+    if (trimmed.length > 0) {
+      filtered = [trimmed];
+    }
+  }
 
   return filtered.map((t, index) => ({
     text: t,

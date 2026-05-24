@@ -10,6 +10,10 @@ import {
 import { collectMessageAttachments } from "../utils/attachmentUtils.js";
 import { sleep } from "../utils/rateLimit.js";
 import { assertApiReachable } from "./intelligenceClient.js";
+import {
+  consecutiveFailureMessage,
+  recordIngestOutcome,
+} from "../utils/ingestGuard.js";
 
 export type BackfillMode = "all" | "files" | "since";
 
@@ -150,6 +154,7 @@ export async function runChannelBackfill(
 
   let processed = 0;
   let newestId: string | undefined;
+  let consecutiveFailures = 0;
 
   for (const message of messages) {
     if (message.author.bot) {
@@ -182,9 +187,23 @@ export async function runChannelBackfill(
 
     const result = await ingestDiscordMessage(fullMessage, ingestMode, { filesOnly });
     mergeStats(stats, result);
-    newestId = fullMessage.id;
+    if (result.ingested > 0 || result.duplicates > 0) {
+      newestId = fullMessage.id;
+    }
     processed += 1;
     options.onProgress?.(processed, stats);
+
+    const outcome = recordIngestOutcome(consecutiveFailures, result);
+    consecutiveFailures = outcome.consecutiveFailures;
+    if (outcome.shouldAbort) {
+      stats.intentWarning = [
+        stats.intentWarning,
+        consecutiveFailureMessage(consecutiveFailures),
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+      break;
+    }
   }
 
   if (newestId) {
@@ -209,6 +228,7 @@ export async function pollChannel(channel: TextBasedChannel): Promise<SyncStats>
   }
 
   let newestId = afterId ?? undefined;
+  let consecutiveFailures = 0;
 
   for (const message of messages) {
     if (message.author.bot) continue;
@@ -220,7 +240,18 @@ export async function pollChannel(channel: TextBasedChannel): Promise<SyncStats>
     }
     const result = await ingestDiscordMessage(fullMessage, "poll");
     mergeStats(stats, result);
-    newestId = fullMessage.id;
+    if (result.ingested > 0 || result.duplicates > 0) {
+      newestId = fullMessage.id;
+    }
+
+    const outcome = recordIngestOutcome(consecutiveFailures, result);
+    consecutiveFailures = outcome.consecutiveFailures;
+    if (outcome.shouldAbort) {
+      console.error(
+        `[discord-bot] poll aborted for #${channel.id}: ${consecutiveFailureMessage(consecutiveFailures)}`,
+      );
+      break;
+    }
   }
 
   if (newestId) {
